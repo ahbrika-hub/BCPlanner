@@ -121,7 +121,15 @@ npm run types:gen
 which runs:
 
 ```bash
-supabase gen types typescript --project-id kgfhnskldifoucmpsur > src/types/database.types.ts
+supabase gen types typescript --project-id "${SUPABASE_PROJECT_ID:-kgfhnskldifoucmpsur}" > src/types/database.types.ts
+```
+
+The project ref is **overridable** via the `SUPABASE_PROJECT_ID` env var and
+**defaults to the staging ref** (`kgfhnskldifoucmpsur`) — staging is the source
+of truth for generated types. To target production instead:
+
+```bash
+SUPABASE_PROJECT_ID=cssxmqwdeiibewucorjx npm run types:gen
 ```
 
 **Requires an authenticated Supabase CLI** — either `supabase login` or a

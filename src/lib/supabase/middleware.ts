@@ -42,7 +42,15 @@ export async function updateSession(
   // IMPORTANT: Do not remove this call. Refreshing the auth token here keeps
   // Server Components, Server Actions, and Route Handlers in sync. Do not run
   // any logic between client creation and this call.
-  await supabase.auth.getUser();
+  //
+  // Guard against transient auth/network failures: a rejected refresh must not
+  // take down the whole request. On error we still return the response so the
+  // request can proceed (downstream code re-resolves auth state as needed).
+  try {
+    await supabase.auth.getUser();
+  } catch (error) {
+    console.error("Supabase session refresh failed in middleware:", error);
+  }
 
   return supabaseResponse;
 }
