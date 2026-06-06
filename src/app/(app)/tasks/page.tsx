@@ -40,7 +40,7 @@ export default async function TasksPage({
     listAssignableUsers(),
     getCurrentProfile(),
   ]);
-  const permissions = profile ? await getCurrentPermissions(profile.role) : [];
+  const permissions = profile ? await getCurrentPermissions() : [];
 
   return (
     <>

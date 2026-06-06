@@ -55,7 +55,7 @@ function QueueItem({
 
 export default async function ApprovalsPage() {
   const profile = await getCurrentProfile();
-  const permissions = profile ? await getCurrentPermissions(profile.role) : [];
+  const permissions = profile ? await getCurrentPermissions() : [];
 
   if (!profile || !can("tasks.approve", permissions)) {
     return (

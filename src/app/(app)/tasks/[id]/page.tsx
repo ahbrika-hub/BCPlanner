@@ -49,7 +49,7 @@ export default async function TaskDetailPage({
     getCurrentProfile(),
   ]);
   if (!profile) notFound();
-  const permissions = await getCurrentPermissions(profile.role);
+  const permissions = await getCurrentPermissions();
 
   return (
     <>

@@ -22,7 +22,7 @@ import { EvaluationForm } from "@/components/performance/evaluation-form";
 
 export default async function PerformancePage() {
   const profile = await getCurrentProfile();
-  const permissions = profile ? await getCurrentPermissions(profile.role) : [];
+  const permissions = profile ? await getCurrentPermissions() : [];
 
   if (
     !profile ||

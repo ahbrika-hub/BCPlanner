@@ -24,7 +24,7 @@ export default async function AppLayout({
     redirect("/login?error=inactive");
   }
 
-  const permissions = await getCurrentPermissions(profile.role);
+  const permissions = await getCurrentPermissions();
   const unreadCount = await getUnreadCount();
 
   return (

@@ -20,7 +20,7 @@ export async function previewMetricsAction(
   try {
     const profile = await getCurrentProfile();
     if (!profile) return { ok: false, error: "Not authenticated." };
-    const permissions = await getCurrentPermissions(profile.role);
+    const permissions = await getCurrentPermissions();
     if (!can("performance.evaluate", permissions)) {
       return { ok: false, error: "Not authorized." };
     }
@@ -51,7 +51,7 @@ export async function createEvaluationAction(
   try {
     const profile = await getCurrentProfile();
     if (!profile) return fail("Not authenticated.");
-    const permissions = await getCurrentPermissions(profile.role);
+    const permissions = await getCurrentPermissions();
     if (!can("performance.evaluate", permissions))
       return fail("Not authorized.");
 
@@ -85,7 +85,7 @@ export async function updateEvaluationAction(
   try {
     const profile = await getCurrentProfile();
     if (!profile) return fail("Not authenticated.");
-    const permissions = await getCurrentPermissions(profile.role);
+    const permissions = await getCurrentPermissions();
     if (!can("performance.evaluate", permissions))
       return fail("Not authorized.");
 

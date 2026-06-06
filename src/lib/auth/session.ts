@@ -33,21 +33,13 @@ export async function getCurrentProfile(): Promise<Profile | null> {
   return data ?? null;
 }
 
-/** Permission keys granted to the given role (via role_permissions). */
-export async function getCurrentPermissions(role: string): Promise<string[]> {
+/**
+ * Permission keys granted to the current user, via the get_my_permissions()
+ * SECURITY DEFINER function (bypasses role_permissions RLS, which only admins
+ * can read). The role is derived from auth.uid() inside the function.
+ */
+export async function getCurrentPermissions(): Promise<string[]> {
   const supabase = await createClient();
-  const { data } = await supabase
-    .from("role_permissions")
-    .select("permissions(key)")
-    .eq("role", role as Database["public"]["Enums"]["user_role"]);
-
-  if (!data) return [];
-
-  return data
-    .map((row) => {
-      const p = row.permissions as { key: string } | { key: string }[] | null;
-      if (!p) return null;
-      return Array.isArray(p) ? (p[0]?.key ?? null) : p.key;
-    })
-    .filter((key): key is string => key !== null);
+  const { data } = await supabase.rpc("get_my_permissions");
+  return data ?? [];
 }
