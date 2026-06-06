@@ -3,22 +3,9 @@
 import { Download } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { toCsv, type CsvRow } from "@/lib/reports/csv";
 
-export type CsvRow = Record<string, string | number | null>;
-
-function toCsv(rows: CsvRow[]): string {
-  if (rows.length === 0) return "";
-  const headers = Object.keys(rows[0]!);
-  const escape = (v: string | number | null) => {
-    const s = v == null ? "" : String(v);
-    return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
-  };
-  const lines = [
-    headers.join(","),
-    ...rows.map((r) => headers.map((h) => escape(r[h] ?? "")).join(",")),
-  ];
-  return lines.join("\n");
-}
+export type { CsvRow };
 
 export function ExportCsvButton({
   rows,

@@ -14,6 +14,7 @@ import {
 } from "@/lib/data/tasks";
 import { addComment } from "@/lib/data/comments";
 import { ACTION_BY_NAME, type TaskAction } from "@/lib/tasks/transitions";
+import { emailRole, emailUsers } from "@/lib/email/events";
 import type { Tables } from "@/lib/data/types";
 
 export type ActionResult =
@@ -57,6 +58,11 @@ export async function createTaskAction(values: unknown): Promise<ActionResult> {
         p_message: `${task.task_no ?? "Task"}: ${task.title}`,
         p_task_id: task.id,
       });
+      await emailRole(
+        "pending_approval",
+        "section_head",
+        `${task.task_no ?? "Task"}: ${task.title}`,
+      );
     }
 
     revalidatePath("/tasks");
@@ -204,6 +210,7 @@ async function notifyForTransition(
         "task_assigned",
         "Task assigned to you",
       );
+      await emailUsers("task_assigned", [payload.assignee_id ?? null], ref);
       break;
     case "submit_review":
       await supabase.rpc("notify_role", {
@@ -213,10 +220,12 @@ async function notifyForTransition(
         p_message: ref,
         p_task_id: taskId,
       });
+      await emailRole("pending_review", "section_head", ref);
       break;
     case "close":
       await notify(task.created_by, "task_completed", "Task completed");
       await notify(task.assignee_id, "task_completed", "Task completed");
+      await emailUsers("completed", [task.created_by, task.assignee_id], ref);
       break;
     case "cancel":
       await notify(task.assignee_id, "task_cancelled", "Task cancelled");
