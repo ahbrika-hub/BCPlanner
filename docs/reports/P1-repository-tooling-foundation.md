@@ -116,14 +116,14 @@ excluded.
 
 ## 6. Confirmation checklist
 
-| Item | Status |
-| --- | --- |
-| Env contract present (placeholders only) | ✅ 6 vars, no secrets |
-| `.gitignore` correct | ✅ real env files ignored, `.env.example` tracked |
-| Folder structure created | ✅ full skeleton with README placeholders |
-| CI added | ✅ Node 20, `npm ci` → lint, typecheck, build (tests deferred to P15) |
-| Brand tokens applied | ✅ `brand-primary #762651`, `brand-secondary #193560`, gray scale, semantic colors |
-| Vercel deploy status | ✅ `main` commit `fa9865d` pushed; `bc-planner` builds from `main` (confirm prod deploy at the bc-planner URL) |
+| Item                                     | Status                                                                                                         |
+| ---------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| Env contract present (placeholders only) | ✅ 6 vars, no secrets                                                                                          |
+| `.gitignore` correct                     | ✅ real env files ignored, `.env.example` tracked                                                              |
+| Folder structure created                 | ✅ full skeleton with README placeholders                                                                      |
+| CI added                                 | ✅ Node 20, `npm ci` → lint, typecheck, build (tests deferred to P15)                                          |
+| Brand tokens applied                     | ✅ `brand-primary #762651`, `brand-secondary #193560`, gray scale, semantic colors                             |
+| Vercel deploy status                     | ✅ `main` commit `fa9865d` pushed; `bc-planner` builds from `main` (confirm prod deploy at the bc-planner URL) |
 
 ## 7. Recommended next prompt
 
