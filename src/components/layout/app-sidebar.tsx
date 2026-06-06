@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 import { signOut } from "@/lib/auth/actions";
 import { useSession } from "@/components/providers/session-provider";
 import { AppNav } from "@/components/layout/app-nav";
+import { BrandLockup } from "@/components/layout/brand-lockup";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -34,20 +35,22 @@ export function AppSidebar() {
       data-collapsed={collapsed}
       className={cn(
         "bg-sidebar text-sidebar-foreground hidden h-dvh shrink-0 flex-col border-r md:flex",
+        "transition-[width] duration-200 ease-in-out motion-reduce:transition-none",
         collapsed ? "w-16" : "w-60",
       )}
     >
-      {/* Brand */}
-      <div className="flex h-14 items-center gap-2 border-b px-4">
-        {!collapsed && (
-          <span className="text-primary text-lg font-semibold tracking-tight">
-            TSS Planner
-          </span>
+      {/* Brand / logo lockup */}
+      <div
+        className={cn(
+          "flex h-14 items-center gap-2 border-b px-4",
+          collapsed && "justify-center px-2",
         )}
+      >
+        {!collapsed && <BrandLockup />}
         <Button
           variant="ghost"
           size="icon"
-          className="ml-auto size-7"
+          className={cn("size-7", !collapsed && "ml-auto")}
           aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
           onClick={() => setCollapsed((c) => !c)}
         >
