@@ -11,24 +11,24 @@ order). Reference/seed data is in `supabase/seed.sql`. RLS tests are in
 
 ## Table inventory
 
-| Table | Purpose |
-| --- | --- |
-| `profiles` | One row per `auth.users` user (created by the `on_auth_user_created` trigger). Holds role, department, status. |
-| `departments` | Departments (single department: Business Consulting). |
-| `permissions` | Permission catalogue (`key`, `category`). |
-| `role_permissions` | Maps each `user_role` to permission keys. Drives `authorize()`. |
-| `business_lines` | The 7 business lines (TSS, Meraap, ARTC, Driving School, Dealership, Corporate, General). |
-| `app_settings` | Key/value app configuration (e.g. `due_soon_threshold`, `no_update_threshold`). |
-| `tasks` | Core task records with lifecycle status, assignment, effort, closure fields. |
-| `task_updates` | **Immutable** progress updates; syncs task progress and auto-advances to `in_progress`. |
-| `task_comments` | Threaded comments (general / task-specific / CEO office). |
-| `task_attachments` | File/link attachments for tasks. |
-| `task_no_counters` | Per-year atomic counter backing `task_no` generation. |
-| `recurring_tasks` | Recurring task templates (weekly/monthly/quarterly). |
-| `performance_evaluations` | Per-employee, per-period performance records. |
-| `notifications` | Per-user notifications. |
-| `audit_logs` | **Immutable** audit trail (service/trigger-written only). |
-| `daily_employee_workload` (view) | Per-employee active workload; `security_invoker`. |
+| Table                            | Purpose                                                                                                        |
+| -------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| `profiles`                       | One row per `auth.users` user (created by the `on_auth_user_created` trigger). Holds role, department, status. |
+| `departments`                    | Departments (single department: Business Consulting).                                                          |
+| `permissions`                    | Permission catalogue (`key`, `category`).                                                                      |
+| `role_permissions`               | Maps each `user_role` to permission keys. Drives `authorize()`.                                                |
+| `business_lines`                 | The 7 business lines (TSS, Meraap, ARTC, Driving School, Dealership, Corporate, General).                      |
+| `app_settings`                   | Key/value app configuration (e.g. `due_soon_threshold`, `no_update_threshold`).                                |
+| `tasks`                          | Core task records with lifecycle status, assignment, effort, closure fields.                                   |
+| `task_updates`                   | **Immutable** progress updates; syncs task progress and auto-advances to `in_progress`.                        |
+| `task_comments`                  | Threaded comments (general / task-specific / CEO office).                                                      |
+| `task_attachments`               | File/link attachments for tasks.                                                                               |
+| `task_no_counters`               | Per-year atomic counter backing `task_no` generation.                                                          |
+| `recurring_tasks`                | Recurring task templates (weekly/monthly/quarterly).                                                           |
+| `performance_evaluations`        | Per-employee, per-period performance records.                                                                  |
+| `notifications`                  | Per-user notifications.                                                                                        |
+| `audit_logs`                     | **Immutable** audit trail (service/trigger-written only).                                                      |
+| `daily_employee_workload` (view) | Per-employee active workload; `security_invoker`.                                                              |
 
 ## Enums
 
@@ -77,20 +77,20 @@ application role comes from their JWT (`auth.uid()` → `profiles.role`).
 
 RLS is **enabled on all 15 tables** with default-deny. Highlights:
 
-| Table | Read | Write |
-| --- | --- | --- |
-| `profiles` | own row or `users.read` | own row or `users.manage`; INSERT via trigger |
-| `departments` / `business_lines` / `app_settings` / `permissions` | any active user | `users.manage` / `settings.manage` / `roles.manage` |
-| `role_permissions` | `roles.manage` | `roles.manage` |
-| `tasks` | own, assigned, or `tasks.read_all` | INSERT: `tasks.create` & own; UPDATE: own/assignee+`tasks.update` or read-all+update; DELETE: `tasks.delete` |
-| `task_updates` | follows task visibility | INSERT: `task_updates.create` on own assigned task (or read-all); **no UPDATE/DELETE (immutable)** |
-| `task_comments` | follows task visibility | INSERT: `task_comments.create` + author is self + visible task; UPDATE: `task_comments.address` |
-| `task_attachments` | `attachments.download` + task visible | INSERT: `attachments.upload` + uploader self + visible; DELETE: own or `tasks.delete` |
-| `recurring_tasks` | `recurring.manage` | `recurring.manage` |
-| `performance_evaluations` | own or `performance.read_all` | INSERT/UPDATE: `performance.evaluate`; DELETE: evaluate + `users.manage` |
-| `notifications` | own only | UPDATE own (mark read); **no client INSERT/DELETE** |
-| `audit_logs` | `audit.read` | **never from clients** |
-| `task_no_counters` | — | **never from clients** (written only by `generate_task_no()`) |
+| Table                                                             | Read                                  | Write                                                                                                        |
+| ----------------------------------------------------------------- | ------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| `profiles`                                                        | own row or `users.read`               | own row or `users.manage`; INSERT via trigger                                                                |
+| `departments` / `business_lines` / `app_settings` / `permissions` | any active user                       | `users.manage` / `settings.manage` / `roles.manage`                                                          |
+| `role_permissions`                                                | `roles.manage`                        | `roles.manage`                                                                                               |
+| `tasks`                                                           | own, assigned, or `tasks.read_all`    | INSERT: `tasks.create` & own; UPDATE: own/assignee+`tasks.update` or read-all+update; DELETE: `tasks.delete` |
+| `task_updates`                                                    | follows task visibility               | INSERT: `task_updates.create` on own assigned task (or read-all); **no UPDATE/DELETE (immutable)**           |
+| `task_comments`                                                   | follows task visibility               | INSERT: `task_comments.create` + author is self + visible task; UPDATE: `task_comments.address`              |
+| `task_attachments`                                                | `attachments.download` + task visible | INSERT: `attachments.upload` + uploader self + visible; DELETE: own or `tasks.delete`                        |
+| `recurring_tasks`                                                 | `recurring.manage`                    | `recurring.manage`                                                                                           |
+| `performance_evaluations`                                         | own or `performance.read_all`         | INSERT/UPDATE: `performance.evaluate`; DELETE: evaluate + `users.manage`                                     |
+| `notifications`                                                   | own only                              | UPDATE own (mark read); **no client INSERT/DELETE**                                                          |
+| `audit_logs`                                                      | `audit.read`                          | **never from clients**                                                                                       |
+| `task_no_counters`                                                | —                                     | **never from clients** (written only by `generate_task_no()`)                                                |
 
 The RLS test suite (`supabase/tests/rls_test.sql`) asserts 22 behaviours across
 all four roles and must pass before merge.

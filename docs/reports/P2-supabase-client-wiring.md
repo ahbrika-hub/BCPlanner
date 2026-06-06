@@ -102,15 +102,15 @@ Vercel deployment         → Ready
 
 ## 6. Confirmation checklist
 
-| Item | Status |
-| --- | --- |
-| Branch `feat/p2-supabase-wiring` | ✅ |
-| No secrets in any file | ✅ (URLs/refs only; secret scan clean) |
-| Three clients compile with `Database` generic | ✅ |
-| Middleware session refresh present | ✅ (`updateSession` + matcher) |
-| `types:gen` script added | ✅ (env-overridable, defaults to staging ref) |
-| PR opened + CI green | ✅ PR #1, lint/typecheck/build success |
-| `docs/SUPABASE.md` written | ✅ |
+| Item                                          | Status                                        |
+| --------------------------------------------- | --------------------------------------------- |
+| Branch `feat/p2-supabase-wiring`              | ✅                                            |
+| No secrets in any file                        | ✅ (URLs/refs only; secret scan clean)        |
+| Three clients compile with `Database` generic | ✅                                            |
+| Middleware session refresh present            | ✅ (`updateSession` + matcher)                |
+| `types:gen` script added                      | ✅ (env-overridable, defaults to staging ref) |
+| PR opened + CI green                          | ✅ PR #1, lint/typecheck/build success        |
+| `docs/SUPABASE.md` written                    | ✅                                            |
 
 ## 7. Code review (CodeRabbit) — addressed in commit `7045f56`
 
