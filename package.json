@@ -13,6 +13,8 @@
     "typecheck": "tsc --noEmit",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
+    "test": "vitest run",
+    "test:e2e": "playwright test",
     "types:gen": "supabase gen types typescript --project-id \"${SUPABASE_PROJECT_ID:-kgfhnskldifoucmpsur}\" > src/types/database.types.ts"
   },
   "dependencies": {
@@ -36,6 +38,7 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@playwright/test": "^1.60.0",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
@@ -47,6 +50,7 @@
     "prettier-plugin-tailwindcss": "0.8.0",
     "supabase": "^2.105.0",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^4.1.8"
   }
 }
