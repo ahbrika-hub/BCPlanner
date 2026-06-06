@@ -58,9 +58,13 @@ create trigger set_tasks_updated_at
   for each row execute function public.set_updated_at();
 
 -- ── task_no generator: TSS-BC-YYYY-NNNN (per-year atomic counter) ──────────
+-- SECURITY DEFINER so it can write task_no_counters even though that table is
+-- locked down by RLS (no client policies). Empty search_path per hardening.
 create or replace function public.generate_task_no()
 returns trigger
 language plpgsql
+security definer
+set search_path = ''
 as $$
 declare
   current_year integer := extract(year from now())::integer;
