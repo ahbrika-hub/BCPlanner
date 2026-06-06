@@ -7,6 +7,7 @@ import { Menu, Bell, LogOut } from "lucide-react";
 import { signOut } from "@/lib/auth/actions";
 import { useSession } from "@/components/providers/session-provider";
 import { AppNav } from "@/components/layout/app-nav";
+import { BrandLockup } from "@/components/layout/brand-lockup";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
@@ -45,7 +46,9 @@ export function AppTopbar({ unreadCount = 0 }: { unreadCount?: number }) {
         </SheetTrigger>
         <SheetContent side="left" className="w-72 p-0">
           <SheetHeader className="border-b">
-            <SheetTitle className="text-primary">TSS Planner</SheetTitle>
+            <SheetTitle asChild>
+              <BrandLockup />
+            </SheetTitle>
           </SheetHeader>
           <div className="px-2 py-3">
             <AppNav onNavigate={() => setOpen(false)} />

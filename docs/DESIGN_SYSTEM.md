@@ -269,14 +269,69 @@ fallbacks so the loading shape mirrors the loaded content.
 Executive, Linear/Vercel-style — not consumer pill navigation.
 
 - **Desktop:** persistent left sidebar, **240px**, collapsible to **64px**
-  icon-only (labels become tooltips).
+  icon-only (labels become tooltips). Width animates with
+  `transition-[width]`, suppressed under `prefers-reduced-motion`.
 - **Mobile:** hidden sidebar; top bar with a hamburger opens a **Sheet** drawer
-  with the same nav. Tapping a nav item closes it.
-- **Grouping:** a primary section plus **Reports & Analysis** and
-  **Administration** (uppercase, muted group labels).
+  with the same grouped nav. Tapping a nav item closes it.
+- **Brand lockup:** the header is a defined `BrandLockup` zone — a logo-mark
+  slot (placeholder, swap for the logo file) + wordmark; collapses to the mark.
 - **Active route:** `--sidebar-accent` (light burgundy `#f5ecf1`) tint with a
-  2px burgundy left border.
+  2px burgundy left border, identical across expanded / collapsed / drawer.
 - **Surface:** cool near-white sidebar (slate-50) with a right hairline border.
+
+### 5.1 Navigation IA (role-aware sections)
+
+The flat nav is grouped into four sections. Visibility derives **purely** from
+the session's resolved permission set (`canSeeNavItem`) — there is no role→item
+map, so the nav can never grant or hide access the route guards / RLS don't
+already. Empty sections are not rendered (no disabled rows). Section labels are
+muted small-caps (`text-fg-muted`, `text-xs`, `uppercase`).
+
+Each item's permission key **mirrors its route guard exactly**. Where a guard
+accepts more than one key (`read` OR `read_all`), the item lists both (any-of).
+
+| Section        | Item          | Route           | Permission (mirrors guard)                   | Visible to     |
+| -------------- | ------------- | --------------- | -------------------------------------------- | -------------- |
+| Work           | Dashboard     | /dashboard      | `dashboard.view` (page: authed-only)         | all 4          |
+| Work           | Tasks         | /tasks          | `tasks.read` (page: authed-only)             | emp, sh, admin |
+| Work           | Approvals     | /approvals      | `tasks.approve`                              | sh, admin      |
+| Work           | Notifications | /notifications  | `notifications.read` (page: authed)          | all 4          |
+| Oversight      | Workload      | /workload       | `workload.read` \| `workload.read_all`       | all 4          |
+| Oversight      | Performance   | /performance    | `performance.read` \| `performance.read_all` | all 4          |
+| Oversight      | Recurring     | /recurring      | `recurring.manage`                           | sh, admin      |
+| Insight        | Reports       | /reports        | `reports.read`                               | emp, sh, admin |
+| Administration | Users         | /admin/users    | `users.read`                                 | sh, admin      |
+| Administration | Settings      | /admin/settings | `settings.read`                              | sh, admin      |
+| Administration | Audit         | /admin/audit    | `audit.read`                                 | sh, admin      |
+
+_(emp = employee, sh = section_head.)_ Resulting per-role nav:
+
+- **employee:** Work (Dashboard, Tasks, Notifications), Oversight (Workload,
+  Performance), Insight (Reports).
+- **section_head:** all sections, all items.
+- **admin:** all sections, all items (admin holds every permission).
+- **ceo:** Work (Dashboard, Notifications), Oversight (Workload, Performance).
+
+> **This table mirrors the existing guards, not a separate intent.** The seed
+> grants `section_head` the Administration permissions (`users.read`,
+> `settings.read`, `audit.read`) and grants `ceo` the `*_all` oversight reads
+> but **not** `reports.read` (the Reports guard's key). The nav reflects that
+> exactly: it hides only what a role's guard already denies, and shows nothing a
+> role can't reach. Aligning the nav to a different intent would require editing
+> permissions/guards — out of scope for this design phase.
+
+### 5.2 Collapsed, tooltip & breadcrumb patterns
+
+- **Collapsed (64px):** section labels are hidden and replaced by a hairline
+  divider between groups; each icon gets a keyboard-reachable Radix **Tooltip**
+  with its label (`side="right"`).
+- **Focus:** every nav item shows `focus-visible:ring-2 ring-ring/50` (the
+  Phase 1 burgundy ring) in both expanded and collapsed states.
+- **Landmarks:** `<nav aria-label="Primary">`; each section is a labelled
+  `role="group"` containing a `role="list"` of items.
+- **Breadcrumbs:** nested/detail routes (e.g. task detail) render a shadcn
+  `Breadcrumb` via the `PageHeader` `breadcrumb` slot — derived from the route,
+  no data added.
 
 ---
 
@@ -285,9 +340,10 @@ Executive, Linear/Vercel-style — not consumer pill navigation.
 `src/components/ui/`: `button`, `card`, `badge`, `avatar`, `dropdown-menu`,
 `separator`, `sheet`, `skeleton`, `tooltip`, `input`, `label`, `form`,
 `scroll-area`, `table`, `progress`, `select`, `tabs`, `dialog`, `textarea`,
-`sonner`. **Phase 1 primitives:** `token-pill`, `status-badge`, `priority-pill`,
-`kpi-card`, `empty-state`, `skeletons`, plus layout (`app-shell`, `app-sidebar`,
-`app-topbar`, `app-nav`, `page-header`).
+`breadcrumb`, `sonner`. **Phase 1 primitives:** `token-pill`, `status-badge`,
+`priority-pill`, `kpi-card`, `empty-state`, `skeletons`. **Layout / nav:**
+`app-shell`, `app-sidebar`, `app-topbar`, `app-nav`, `nav-config`,
+`brand-lockup`, `page-header`.
 
 - **Style:** New York (Radix-based), pinned in `components.json`.
 - **Icons:** `lucide-react`. **Toasts:** `sonner`. **tailwind-merge** stays on
