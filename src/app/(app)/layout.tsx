@@ -5,6 +5,7 @@ import {
   getCurrentProfile,
   getCurrentPermissions,
 } from "@/lib/auth/session";
+import { getUnreadCount } from "@/lib/data/notifications";
 import { SessionProvider } from "@/components/providers/session-provider";
 import { AppShell } from "@/components/layout/app-shell";
 
@@ -24,10 +25,11 @@ export default async function AppLayout({
   }
 
   const permissions = await getCurrentPermissions(profile.role);
+  const unreadCount = await getUnreadCount();
 
   return (
     <SessionProvider value={{ user, profile, permissions }}>
-      <AppShell>{children}</AppShell>
+      <AppShell unreadCount={unreadCount}>{children}</AppShell>
     </SessionProvider>
   );
 }

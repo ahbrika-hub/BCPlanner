@@ -846,9 +846,29 @@ export type Database = {
     }
     Functions: {
       authorize: { Args: { requested_permission: string }; Returns: boolean }
+      create_notification: {
+        Args: {
+          p_message: string
+          p_task_id?: string
+          p_title: string
+          p_type: Database["public"]["Enums"]["notification_type"]
+          p_user_id: string
+        }
+        Returns: string
+      }
       dearmor: { Args: { "": string }; Returns: string }
       gen_random_uuid: { Args: never; Returns: string }
       gen_salt: { Args: { "": string }; Returns: string }
+      notify_role: {
+        Args: {
+          p_message: string
+          p_role: Database["public"]["Enums"]["user_role"]
+          p_task_id?: string
+          p_title: string
+          p_type: Database["public"]["Enums"]["notification_type"]
+        }
+        Returns: number
+      }
       pgp_armor_headers: {
         Args: { "": string }
         Returns: Record<string, unknown>[]

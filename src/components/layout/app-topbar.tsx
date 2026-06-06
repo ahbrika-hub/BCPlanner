@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { Menu, Bell, LogOut } from "lucide-react";
 
 import { signOut } from "@/lib/auth/actions";
@@ -30,7 +31,7 @@ function initials(name: string, email: string): string {
   return (parts[0]?.[0] ?? "?").concat(parts[1]?.[0] ?? "").toUpperCase();
 }
 
-export function AppTopbar() {
+export function AppTopbar({ unreadCount = 0 }: { unreadCount?: number }) {
   const [open, setOpen] = useState(false);
   const { profile } = useSession();
 
@@ -56,8 +57,15 @@ export function AppTopbar() {
         TSS Planner
       </span>
 
-      <Button variant="ghost" size="icon" aria-label="Notifications">
-        <Bell className="size-5" />
+      <Button asChild variant="ghost" size="icon" aria-label="Notifications">
+        <Link href="/notifications" className="relative">
+          <Bell className="size-5" />
+          {unreadCount > 0 && (
+            <span className="bg-primary text-primary-foreground absolute -top-0.5 -right-0.5 flex size-4 items-center justify-center rounded-full text-[10px]">
+              {unreadCount > 9 ? "9+" : unreadCount}
+            </span>
+          )}
+        </Link>
       </Button>
 
       <DropdownMenu>
