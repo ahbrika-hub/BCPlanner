@@ -1,10 +1,10 @@
 import { getWorkload } from "@/lib/data/workload";
 import { getCurrentProfile, getCurrentPermissions } from "@/lib/auth/session";
 import { can } from "@/lib/permissions";
-import { cn } from "@/lib/utils";
 import { PageHeader } from "@/components/layout/page-header";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Progress } from "@/components/ui/progress";
+import { TokenPill } from "@/components/ui/token-pill";
 import {
   Table,
   TableBody,
@@ -14,10 +14,16 @@ import {
   TableRow,
 } from "@/components/ui/table";
 
-const levelClasses: Record<string, string> = {
-  high: "text-danger border-danger/40",
-  medium: "text-warning border-warning/40",
-  low: "text-success border-success/40",
+// Workload level → semantic state token (shared TokenPill anatomy).
+const levelColor: Record<string, string> = {
+  high: "var(--color-danger)",
+  medium: "var(--color-warning)",
+  low: "var(--color-success)",
+};
+const levelLabel: Record<string, string> = {
+  high: "High",
+  medium: "Medium",
+  low: "Low",
 };
 
 export default async function WorkloadPage() {
@@ -86,14 +92,12 @@ export default async function WorkloadPage() {
                       </div>
                     </TableCell>
                     <TableCell>
-                      <span
-                        className={cn(
-                          "inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium capitalize",
-                          levelClasses[level],
-                        )}
-                      >
-                        {level}
-                      </span>
+                      <TokenPill
+                        color={
+                          levelColor[level] ?? "var(--color-muted-foreground)"
+                        }
+                        label={levelLabel[level] ?? level}
+                      />
                     </TableCell>
                   </TableRow>
                 );
