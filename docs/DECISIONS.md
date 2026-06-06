@@ -73,14 +73,14 @@ Two Supabase projects back the app, mapped by environment. **Only URLs are
 recorded here; keys live exclusively in Vercel/`.env.local` and are never
 committed.**
 
-| `NEXT_PUBLIC_APP_ENV` | Supabase project URL              |
-| --------------------- | --------------------------------- |
-| `staging`             | _(to be filled in P2 — URL only)_ |
-| `production`          | _(to be filled in P2 — URL only)_ |
+| `NEXT_PUBLIC_APP_ENV` | Project ref            | Supabase project URL                     |
+| --------------------- | ---------------------- | ---------------------------------------- |
+| `staging`             | `kgfhnskldifoucmpsur`  | https://kgfhnskldifoucmpsur.supabase.co  |
+| `production`          | `cssxmqwdeiibewucorjx` | https://cssxmqwdeiibewucorjx.supabase.co |
 
-> The concrete project URLs are added during P2 (Supabase wiring). They are
-> non‑secret values; the corresponding anon and service‑role **keys are secrets**
-> and must not be stored in the repo.
+> Filled in during P2 (Supabase wiring). Refs and URLs are **non‑secret**; the
+> corresponding anon and service‑role **keys are secrets** and must not be
+> stored in the repo. See `docs/SUPABASE.md` for the full wiring.
 
 ---
 
