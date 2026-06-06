@@ -4,20 +4,30 @@ Takes TSS Planner from feature-complete to verified-in-production. Steps are
 labelled **[Claude]** (done in code / this PR) or **[Ahmed]** (manual, needs
 dashboard access or production credentials). **No secret is ever hardcoded.**
 
+> **Status — 2026-06-06:** The app is **live** at https://bc-planner.vercel.app.
+> Production DB has been rebuilt and **all 16 migrations + reference data are
+> applied** (✅ §1). Auth works. **Remaining gates:** rotate the service-role keys
+> + set Vercel env (§3), (re)create the first admin profile and onboard users
+> (§6 / [ONBOARDING.md](./ONBOARDING.md)). See [SYSTEM_STATE.md](./SYSTEM_STATE.md)
+> for the full live status table.
+
 ---
 
 ## 1. Production database sync (DO THIS FIRST)
 
 Production: `cssxmqwdeiibewucorjx` · Staging: `kgfhnskldifoucmpsur`.
 
-**[Claude]** Reference data is now a versioned, idempotent migration
+**[Claude]** Reference data is a versioned, idempotent migration
 (`20260606171529_reference_data_seed.sql`) so it ships via `db push` — without
 the permission catalogue + `role_permissions`, even an admin is locked out. The
-full migration set (14 files) was validated on PostgreSQL 16 (see §1.2).
+full migration set (16 files, incl. the one-time
+`20260606140000_reset_legacy_public_schema.sql`) was validated on PostgreSQL 16
+(see §1.2).
 
-**[Ahmed] Apply all migrations + reference data to production** (run locally with
-the Supabase CLI; you'll be prompted for the DB password — never paste it into
-code):
+**✅ DONE — production migrations are applied.** Production was rebuilt this
+session and all 16 migrations + reference data are live, applied automatically by
+the `db-push-production.yml` workflow on merge to `main` (and re-runs are clean
+no-ops). The manual command below is kept for reference / disaster recovery:
 
 ```bash
 supabase login                              # if not already
@@ -25,9 +35,9 @@ supabase link --project-ref cssxmqwdeiibewucorjx
 supabase db push                            # applies ALL migrations (incl. reference_data_seed)
 ```
 
-`db push` does **not** run `supabase/seed.sql`, but the reference data now lives
-in a migration, so `db push` is sufficient. (Alternatively, paste
-`supabase/seed.sql` into the Dashboard SQL editor — it's idempotent.)
+`db push` does **not** run `supabase/seed.sql`, but the reference data lives in a
+migration, so `db push` is sufficient. (Alternatively, paste `supabase/seed.sql`
+into the Dashboard SQL editor — it's idempotent.)
 
 ### 1.2 Verify production (run read-only in the Dashboard SQL editor)
 
@@ -177,12 +187,19 @@ Fill in and work through:
 
 ## 8. Final go-live status
 
-Code is production-ready and CI-green. The remaining gate is the **[Ahmed]**
-manual steps that need credentials this environment doesn't have:
+Code is production-ready and CI-green, the app is deployed, and the production
+database is fully migrated + seeded. Remaining **[Ahmed]** manual steps:
 
-1. `supabase db push` to production (+ verify §1.2). **← unblocks the live app.**
-2. Rotate service-role keys; set `SUPABASE_SERVICE_ROLE_KEY` + `CRON_SECRET` in Vercel; redeploy.
-3. Click through §2 as admin.
-4. Onboard CEO + employees (§6).
+1. ~~`supabase db push` to production~~ — **✅ DONE** (rebuilt this session; all 16
+   migrations + reference data applied via the auto-deploy workflow).
+2. **Rotate service-role keys**; set `SUPABASE_SERVICE_ROLE_KEY` + `CRON_SECRET` in
+   Vercel; redeploy. *(Until done: cron returns 503, in-app invites disabled.)*
+3. **(Re)create the first admin profile** — the rebuild wiped `profiles`; see
+   [ONBOARDING.md](./ONBOARDING.md) §1. *(One-off SQL.)*
+4. **Click through §2** as admin.
+5. **Onboard** CEO + section heads + employees ([ONBOARDING.md](./ONBOARDING.md)).
 
-After step 1 the admin can log in and use the full system; after step 4 the team is live.
+The app is reachable and authentication works now; after steps 2–3 the admin has
+full access, and after step 5 the team is live. A permanent profile-backfill
+migration (so a rebuild never locks users out again) is tracked as Tier 1 in
+[IMPROVEMENT_ROADMAP.md](./IMPROVEMENT_ROADMAP.md).
