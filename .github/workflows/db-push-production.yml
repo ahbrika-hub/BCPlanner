@@ -35,7 +35,9 @@ jobs:
       - name: Set up Supabase CLI
         uses: supabase/setup-cli@v1
         with:
-          version: latest
+          # Pinned (not "latest") so setup doesn't hit the rate-limited GitHub
+          # API call that resolves the newest release.
+          version: 2.105.0
 
       - name: Link production project
         run: supabase link --project-ref "$PROJECT_REF"
