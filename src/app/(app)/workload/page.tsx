@@ -22,7 +22,7 @@ const levelClasses: Record<string, string> = {
 
 export default async function WorkloadPage() {
   const profile = await getCurrentProfile();
-  const permissions = profile ? await getCurrentPermissions(profile.role) : [];
+  const permissions = profile ? await getCurrentPermissions() : [];
 
   if (
     !profile ||

@@ -37,7 +37,7 @@ export async function createTaskAction(values: unknown): Promise<ActionResult> {
   try {
     const profile = await getCurrentProfile();
     if (!profile) return fail("Not authenticated.");
-    const permissions = await getCurrentPermissions(profile.role);
+    const permissions = await getCurrentPermissions();
     if (!can("tasks.create", permissions)) return fail("Not authorized.");
 
     const status =
@@ -78,7 +78,7 @@ export async function updateTaskAction(
   try {
     const profile = await getCurrentProfile();
     if (!profile) return fail("Not authenticated.");
-    const permissions = await getCurrentPermissions(profile.role);
+    const permissions = await getCurrentPermissions();
     if (!can("tasks.update", permissions)) return fail("Not authorized.");
 
     await updateTask(id, parsed.data as Tables["tasks"]["Update"]);
@@ -108,7 +108,7 @@ export async function transitionTaskAction(
   try {
     const profile = await getCurrentProfile();
     if (!profile) return fail("Not authenticated.");
-    const permissions = await getCurrentPermissions(profile.role);
+    const permissions = await getCurrentPermissions();
     if (!can(desc.permission, permissions)) return fail("Not authorized.");
 
     const task = await getTask(id);

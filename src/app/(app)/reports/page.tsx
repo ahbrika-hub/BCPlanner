@@ -31,7 +31,7 @@ export default async function ReportsPage({
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const profile = await getCurrentProfile();
-  const permissions = profile ? await getCurrentPermissions(profile.role) : [];
+  const permissions = profile ? await getCurrentPermissions() : [];
   if (!profile || !can("reports.read", permissions)) {
     return (
       <>

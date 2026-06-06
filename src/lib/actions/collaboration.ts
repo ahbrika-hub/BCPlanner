@@ -37,7 +37,7 @@ export async function addUpdateAction(
   try {
     const profile = await getCurrentProfile();
     if (!profile) return fail("Not authenticated.");
-    const permissions = await getCurrentPermissions(profile.role);
+    const permissions = await getCurrentPermissions();
     if (!can("task_updates.create", permissions))
       return fail("Not authorized.");
 
@@ -62,7 +62,7 @@ export async function addCommentAction(
   try {
     const profile = await getCurrentProfile();
     if (!profile) return fail("Not authenticated.");
-    const permissions = await getCurrentPermissions(profile.role);
+    const permissions = await getCurrentPermissions();
     if (!can("task_comments.create", permissions))
       return fail("Not authorized.");
 
@@ -100,7 +100,7 @@ export async function markAddressedAction(
   try {
     const profile = await getCurrentProfile();
     if (!profile) return fail("Not authenticated.");
-    const permissions = await getCurrentPermissions(profile.role);
+    const permissions = await getCurrentPermissions();
     if (!can("task_comments.address", permissions))
       return fail("Not authorized.");
 
@@ -119,7 +119,7 @@ export async function uploadAttachmentAction(
   try {
     const profile = await getCurrentProfile();
     if (!profile) return fail("Not authenticated.");
-    const permissions = await getCurrentPermissions(profile.role);
+    const permissions = await getCurrentPermissions();
     if (!can("attachments.upload", permissions)) return fail("Not authorized.");
 
     const file = formData.get("file");
