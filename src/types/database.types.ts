@@ -859,6 +859,7 @@ export type Database = {
       dearmor: { Args: { "": string }; Returns: string }
       gen_random_uuid: { Args: never; Returns: string }
       gen_salt: { Args: { "": string }; Returns: string }
+      generate_due_recurring_tasks: { Args: never; Returns: number }
       get_my_permissions: { Args: never; Returns: string[] }
       notify_role: {
         Args: {
