@@ -1,0 +1,53 @@
+name: Reset + rebuild production DB (one-time)
+
+# ONE-TIME operation. Production was initialised with an incompatible older
+# schema (legacy migrations 0001-0006). This:
+#   1. repairs the remote migration history (marks the legacy 0001-0006 as
+#      reverted — bookkeeping only, drops no objects), then
+#   2. runs `supabase db push`, whose first migration
+#      (20260606140000_reset_legacy_public_schema) drops the legacy public
+#      schema and the rest rebuild this project's schema + seed.
+# The `auth` schema is untouched, so existing logins are preserved.
+#
+# Triggers on push to the feature branch (so it runs once now) and on demand.
+# Remove this workflow after it has succeeded.
+on:
+  push:
+    branches: [claude/p1-repo-tooling-foundation-eZnVB]
+    paths:
+      - ".github/workflows/db-reset-production.yml"
+      - "supabase/migrations/20260606140000_reset_legacy_public_schema.sql"
+  workflow_dispatch: {}
+
+concurrency:
+  group: db-write-production
+  cancel-in-progress: false
+
+jobs:
+  reset:
+    name: reset + rebuild production
+    runs-on: ubuntu-latest
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+      PROJECT_REF: cssxmqwdeiibewucorjx # production (non-secret)
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Link production project
+        run: supabase link --project-ref "$PROJECT_REF"
+
+      - name: Repair legacy migration history (bookkeeping only)
+        run: supabase migration repair --status reverted 0001 0002 0003 0004 0005 0006
+
+      - name: Push migrations (rebuild schema + seed)
+        run: supabase db push
+
+      - name: Confirm migration history after push
+        run: supabase migration list
