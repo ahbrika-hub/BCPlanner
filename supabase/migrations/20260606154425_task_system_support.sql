@@ -39,25 +39,45 @@ on conflict (id) do nothing;
 -- ── A3: storage.objects RLS for the task-attachments bucket ───────────────
 -- Coarse permission gates here; per-task visibility is enforced at the app
 -- layer (downloads use server-generated signed URLs after an RLS-checked read).
-alter table storage.objects enable row level security;
+--
+-- On hosted Supabase, storage.objects is owned by supabase_storage_admin, so
+-- the migration role cannot ALTER it or create policies on it ("must be owner
+-- of table objects", SQLSTATE 42501). There, RLS on storage.objects is already
+-- enabled by default and server access uses the service role (bypasses RLS)
+-- plus signed URLs, so we apply these where permitted and skip gracefully
+-- otherwise. Locally (where the role owns the table) they apply in full.
+do $do$
+begin
+  execute 'alter table storage.objects enable row level security';
 
-drop policy if exists task_attachments_insert on storage.objects;
-create policy task_attachments_insert on storage.objects
-  for insert to authenticated
-  with check (bucket_id = 'task-attachments' and public.authorize('attachments.upload'));
+  execute 'drop policy if exists task_attachments_insert on storage.objects';
+  execute $p$
+    create policy task_attachments_insert on storage.objects
+      for insert to authenticated
+      with check (bucket_id = 'task-attachments' and public.authorize('attachments.upload'))
+  $p$;
 
-drop policy if exists task_attachments_select on storage.objects;
-create policy task_attachments_select on storage.objects
-  for select to authenticated
-  using (bucket_id = 'task-attachments' and public.authorize('attachments.download'));
+  execute 'drop policy if exists task_attachments_select on storage.objects';
+  execute $p$
+    create policy task_attachments_select on storage.objects
+      for select to authenticated
+      using (bucket_id = 'task-attachments' and public.authorize('attachments.download'))
+  $p$;
 
-drop policy if exists task_attachments_delete on storage.objects;
-create policy task_attachments_delete on storage.objects
-  for delete to authenticated
-  using (
-    bucket_id = 'task-attachments'
-    and (owner = auth.uid() or public.authorize('tasks.delete'))
-  );
+  execute 'drop policy if exists task_attachments_delete on storage.objects';
+  execute $p$
+    create policy task_attachments_delete on storage.objects
+      for delete to authenticated
+      using (
+        bucket_id = 'task-attachments'
+        and (owner = auth.uid() or public.authorize('tasks.delete'))
+      )
+  $p$;
+exception
+  when insufficient_privilege then
+    raise notice 'Skipping storage.objects RLS/policies: migration role lacks ownership (managed by platform defaults + app-layer signed URLs).';
+end
+$do$;
 
 -- ── A4: audit trigger on task status changes (SECURITY DEFINER) ───────────
 -- audit_logs has no client write policy; this definer function bypasses RLS.

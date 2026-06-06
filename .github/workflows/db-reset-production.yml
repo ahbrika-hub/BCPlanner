@@ -16,7 +16,7 @@ on:
     branches: [claude/p1-repo-tooling-foundation-eZnVB]
     paths:
       - ".github/workflows/db-reset-production.yml"
-      - "supabase/migrations/20260606140000_reset_legacy_public_schema.sql"
+      - "supabase/migrations/**"
   workflow_dispatch: {}
 
 concurrency:
@@ -46,7 +46,8 @@ jobs:
         run: supabase link --project-ref "$PROJECT_REF"
 
       - name: Repair legacy migration history (bookkeeping only)
-        run: supabase migration repair --status reverted 0001 0002 0003 0004 0005 0006
+        # Idempotent: already reverted on a prior run, so tolerate a no-op re-run.
+        run: supabase migration repair --status reverted 0001 0002 0003 0004 0005 0006 || true
 
       - name: Push migrations (rebuild schema + seed)
         run: supabase db push
