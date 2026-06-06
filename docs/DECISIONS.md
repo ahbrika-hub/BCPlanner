@@ -84,8 +84,37 @@ committed.**
 
 ---
 
+## D10 — Dependency decisions (Data Foundation phase)
+
+- **Zod v4.x** installed this phase. Validation schemas live in
+  `src/lib/validations/` and mirror the database model (tasks, task updates,
+  profiles). Uses the Zod 4 top-level format validators (`z.uuid()`,
+  `z.iso.date()`, `z.url()`).
+- **tailwind-merge** must be pinned to **3.x** when shadcn/ui is initialised in
+  the Design System phase (compatibility).
+- **@tremor/react** is **permanently excluded** (Tailwind v3 / React 18 conflict
+  with our Tailwind v4 / React 19 stack).
+- **nuqs** — evaluate in a later phase only; the Next.js 16 adapter has an open
+  issue (#1263).
+- **shadcn/ui** — **adopt** in the Design System phase with the latest CLI for
+  the Tailwind v4 `@theme` variant.
+
+## D11 — Database type generation
+
+- Canonical workflow: `npm run types:gen` (Supabase CLI, requires Docker or an
+  authenticated CLI). The generated `src/types/database.types.ts` is
+  **auto-generated — do not hand-edit**.
+- When Docker is unavailable, types can be generated against a plain PostgreSQL
+  database using the `@supabase/postgres-meta` engine (the same engine the CLI
+  uses). See `docs/DATABASE.md`.
+
+---
+
 ## Phase notes
 
-- **P1 (this phase):** Repository & tooling foundation only — no Supabase, auth,
-  or business logic. Committed directly to `main` to establish the deployable
-  baseline; subsequent phases use `feat/*` branches + PRs.
+- **P1:** Repository & tooling foundation only — no Supabase, auth, or business
+  logic. Committed directly to `main` to establish the deployable baseline;
+  subsequent phases use `feat/*` branches + PRs.
+- **P2 (Supabase wiring):** clients, session proxy, placeholder types.
+- **Data Foundation & Security:** full schema, RLS, seed, generated types, and
+  Zod schemas. Database is production-ready after this phase.
