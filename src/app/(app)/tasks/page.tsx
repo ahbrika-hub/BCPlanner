@@ -63,7 +63,7 @@ export default async function TasksPage({
         />
       ) : (
         <div className="rounded-lg border">
-          <Table>
+          <Table stickyFirstColumn>
             <TableHeader>
               <TableRow>
                 <TableHead>Task No</TableHead>

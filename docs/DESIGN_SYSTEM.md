@@ -364,7 +364,72 @@ presentation-only: no metric, query, or data source changed.
 
 ---
 
-## 7. Component library (shadcn/ui, New York)
+## 7. Responsiveness, motion & accessibility
+
+### 7.1 Breakpoints (one system)
+
+Tailwind defaults, used consistently as **three tiers**:
+
+| Tier    | Range      | Token  |
+| ------- | ---------- | ------ |
+| mobile  | `< 640px`  | (base) |
+| tablet  | `≥ 640px`  | `sm:`  |
+| desktop | `≥ 1024px` | `lg:`  |
+
+- **Stat / KPI grids** reflow `4 → 2 → 1`:
+  `grid-cols-1 sm:grid-cols-2 lg:grid-cols-4`.
+- **Forms** are single-column on mobile, two-up from `sm`:
+  `grid-cols-1 sm:grid-cols-2`. One field per row on phones.
+- **Charts** keep `max-h-*` min-heights and stay legible at every tier.
+
+### 7.2 Table mobile strategy (one recipe)
+
+The shadcn `Table` already wraps in a horizontally scrollable container, so the
+chosen strategy app-wide is **horizontal scroll + sticky first column**. Pass
+`stickyFirstColumn` so each row keeps its leading label pinned while the rest
+scrolls — applied to every module table (tasks, approvals, workload, performance,
+recurring, reports, users, audit) and the dashboard `TaskTable`. We do **not**
+hide or restack columns; data is identical at every width.
+
+### 7.3 Motion tokens
+
+Restrained, corporate. Defined in `@theme`:
+
+| Token             | Value                     | Use                               |
+| ----------------- | ------------------------- | --------------------------------- |
+| `--ease-standard` | `cubic-bezier(0.2,0,0,1)` | the one easing                    |
+| `--motion-fast`   | `120ms`                   | hover / focus / active            |
+| `--motion`        | `180ms`                   | overlays, nav, larger transitions |
+
+Tailwind's `--default-transition-duration` / `--default-transition-timing-function`
+are set to these, so every `transition-*` utility uses the tokens by default;
+`--animate-duration` drives the tw-animate-css overlay enter/exit. No long,
+bouncy, or playful motion.
+
+**Reduced motion:** a global `@media (prefers-reduced-motion: reduce)` rule in
+`globals.css` neutralizes animation/transition app-wide (supersedes the earlier
+per-component `motion-reduce:*` handling).
+
+### 7.4 Accessibility conventions
+
+- **Focus ring:** a global `:focus-visible` outline (TSS Burgundy at 50%) covers
+  every interactive element; components that manage their own ring opt out with
+  `outline-none` and keep their box-shadow ring. One ring identity app-wide.
+- **Landmarks & skip link:** `AppShell` renders a "Skip to main content" link
+  (visible on focus) targeting `<main id="main-content">`; nav is
+  `<nav aria-label="Primary">`; dashboard regions use `<section aria-label>`.
+- **Headings:** one `H1` per page (via `PageHeader`); logical order below it.
+- **Icons:** decorative icons are `aria-hidden`; icon-only controls have
+  `aria-label`.
+- **No colour-only encoding:** status / priority / workload always pair colour
+  with a dot **and** text (`TokenPill`); form errors are text (`FormMessage`) +
+  `aria-invalid`, never colour alone.
+- **Touch targets:** nav items are `≥44px` in the mobile drawer
+  (`min-h-11 md:min-h-9`); mobile top-bar controls are `size-11` (44px).
+
+---
+
+## 8. Component library (shadcn/ui, New York)
 
 `src/components/ui/`: `button`, `card`, `badge`, `avatar`, `dropdown-menu`,
 `separator`, `sheet`, `skeleton`, `tooltip`, `input`, `label`, `form`,

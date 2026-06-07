@@ -105,6 +105,20 @@
   --shadow-md:
     0 2px 4px -1px rgb(15 23 42 / 0.06), 0 1px 2px -1px rgb(15 23 42 / 0.04);
 
+  /* Motion — restrained, corporate. One easing, two durations. Route hover /
+     focus / active, overlay enter-exit, nav, and toasts through these. Never
+     long, bouncy, or playful. A global prefers-reduced-motion rule (below)
+     neutralizes non-essential motion app-wide. */
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --motion-fast: 120ms; /* hover/focus/active, small state changes */
+  --motion: 180ms; /* overlays, nav, larger transitions */
+  /* Route every Tailwind `transition-*` utility through the tokens by default
+     (components may still override with explicit duration-* utilities). */
+  --default-transition-duration: var(--motion-fast);
+  --default-transition-timing-function: var(--ease-standard);
+  /* tw-animate-css enter/exit keyframes (dialog/sheet/dropdown/toast). */
+  --animate-duration: var(--motion);
+
   /* Typography — Inter (interim) with a professional system fallback stack.
      ALL app font usage routes through --font-sans (html/body + `font-sans`),
      so swapping in Frutiger LT Arabic is a single-token change (see layout.tsx
@@ -320,5 +334,39 @@ body {
   }
   h3 {
     @apply text-xl font-semibold; /* 20px / 600 / lh 1.4 */
+  }
+
+  /* App-wide focus ring (TSS Burgundy at reduced intensity). Components that
+     manage their own ring opt out with `outline-none` (a class — higher
+     precedence than this element rule) and keep their box-shadow ring; every
+     other interactive element falls back to this outline so nothing is ever
+     left without a visible focus indicator. Uses outline (not box-shadow) so it
+     never shifts layout. */
+  a:focus-visible,
+  button:focus-visible,
+  summary:focus-visible,
+  [role="button"]:focus-visible,
+  [role="tab"]:focus-visible,
+  [role="menuitem"]:focus-visible,
+  [tabindex]:focus-visible,
+  :is(input, select, textarea):focus-visible {
+    outline: 2px solid color-mix(in srgb, var(--ring) 50%, transparent);
+    outline-offset: 2px;
+  }
+}
+
+/*
+ * Global reduced-motion. Supersedes the per-component `motion-reduce:*` handling
+ * from earlier phases — when the user asks for less motion, nearly all
+ * animation/transition is neutralized app-wide (overlays, nav, toasts, hovers).
+ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }

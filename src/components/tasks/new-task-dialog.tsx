@@ -104,7 +104,7 @@ export function NewTaskDialog({
             <Textarea id="description" rows={3} {...register("description")} />
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="category">Category</Label>
               <Input id="category" {...register("category")} />
@@ -130,7 +130,7 @@ export function NewTaskDialog({
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div className="space-y-2">
               <Label>Business Line</Label>
               <Select onValueChange={(v) => setValue("business_line_id", v)}>

@@ -4,7 +4,19 @@ import * as React from "react";
 
 import { cn } from "@/lib/utils";
 
-function Table({ className, ...props }: React.ComponentProps<"table">) {
+function Table({
+  className,
+  stickyFirstColumn = false,
+  ...props
+}: React.ComponentProps<"table"> & {
+  /**
+   * Mobile strategy: the table already scrolls horizontally (this container).
+   * When set, the first column stays pinned during that scroll so each row
+   * keeps its label in view. Pinned cells take a solid `bg-card` surface so
+   * content underneath doesn't bleed through.
+   */
+  stickyFirstColumn?: boolean;
+}) {
   return (
     <div
       data-slot="table-container"
@@ -12,7 +24,12 @@ function Table({ className, ...props }: React.ComponentProps<"table">) {
     >
       <table
         data-slot="table"
-        className={cn("w-full caption-bottom text-sm", className)}
+        className={cn(
+          "w-full caption-bottom text-sm",
+          stickyFirstColumn &&
+            "[&_td:first-child]:bg-card [&_th:first-child]:bg-card [&_td:first-child]:sticky [&_td:first-child]:left-0 [&_th:first-child]:sticky [&_th:first-child]:left-0 [&_th:first-child]:z-10",
+          className,
+        )}
         {...props}
       />
     </div>

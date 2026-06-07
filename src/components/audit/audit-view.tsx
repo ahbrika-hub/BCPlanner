@@ -116,7 +116,7 @@ export function AuditView({
       ) : (
         <>
           <div className="rounded-lg border">
-            <Table>
+            <Table stickyFirstColumn>
               <TableHeader>
                 <TableRow>
                   <TableHead>Time</TableHead>

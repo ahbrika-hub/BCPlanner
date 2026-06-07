@@ -95,7 +95,7 @@ export function EvaluationForm({
           <DialogTitle>New Evaluation</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div className="space-y-2">
               <Label>Employee</Label>
               <Select onValueChange={(v) => setValue("employee_id", v)}>

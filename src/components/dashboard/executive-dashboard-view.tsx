@@ -59,7 +59,7 @@ export function ExecutiveDashboardView({
       {/* Lead: headline metrics (F-pattern top row). */}
       <section
         aria-label="Key metrics"
-        className="grid grid-cols-2 gap-4 lg:grid-cols-4"
+        className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4"
       >
         <KpiCard label="Active tasks" value={stats.active} icon={ListTodo} />
         <KpiCard
