@@ -5,6 +5,8 @@ import { Pie, PieChart, Cell } from "recharts";
 import {
   type ChartConfig,
   ChartContainer,
+  ChartLegend,
+  ChartLegendContent,
   ChartTooltip,
   ChartTooltipContent,
 } from "@/components/ui/chart";
@@ -28,7 +30,10 @@ export function StatusDistributionChart({ data }: { data: StatusDatum[] }) {
   );
 
   return (
-    <ChartContainer config={config} className="mx-auto aspect-square max-h-64">
+    <ChartContainer
+      config={config}
+      className="mx-auto aspect-square max-h-72 w-full"
+    >
       <PieChart>
         <ChartTooltip content={<ChartTooltipContent nameKey="status" />} />
         <Pie
@@ -42,6 +47,11 @@ export function StatusDistributionChart({ data }: { data: StatusDatum[] }) {
             <Cell key={d.status} fill={`var(--color-status-${d.status})`} />
           ))}
         </Pie>
+        {/* Legend maps colour → status label so the donut isn't colour-only. */}
+        <ChartLegend
+          content={<ChartLegendContent nameKey="status" />}
+          className="flex-wrap"
+        />
       </PieChart>
     </ChartContainer>
   );

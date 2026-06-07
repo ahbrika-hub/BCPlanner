@@ -335,7 +335,36 @@ _(emp = employee, sh = section_head.)_ Resulting per-role nav:
 
 ---
 
-## 6. Component library (shadcn/ui, New York)
+## 6. Dashboards (composition)
+
+`/dashboard` renders one of three **role-driven** variants (unchanged):
+`ExecutiveDashboard` (ceo), `OperationalDashboard` (section_head / admin),
+`PersonalDashboard` (employee). Each is split into a thin **container** (server
+component — fetches exactly the data it always did) and a presentational
+**view** (`*-dashboard-view.tsx`, typed data props). Recompose is
+presentation-only: no metric, query, or data source changed.
+
+- **Metric tiles:** the canonical `KpiCard` (big number + label + optional
+  trend slot). KPI grid reflows `4 → 2 → 1`.
+- **Charts:** always through the shadcn chart wrapper so series colours come
+  from `@theme` tokens (burgundy primary, navy secondary). Trend → area;
+  composition → a single donut; comparison → horizontal bar. Every chart has a
+  **legend or labelled axis** — never colour-only encoding. ≤4 series.
+- **Tables:** the shared `TaskTable` recipe (sticky first column, horizontal
+  scroll on mobile) + `StatusBadge`. The executive performance table bands the
+  score with a `TokenPill`.
+- **Executive** is the CEO's sole reporting surface: a comfortable reading
+  column (`max-w-5xl`), generous whitespace, F-pattern order. **Operational** is
+  denser (more above the fold). **Personal** is "my work today".
+- **Loading:** `dashboard/loading.tsx` renders the Phase 1 skeleton set
+  (`KpiCardSkeleton`, `ChartSkeleton`). **Empty/zero** states use `EmptyState`.
+- **CEO Office Comments** remains a task-detail action (`/tasks/[id]`); it is
+  **not** part of the dashboard's fetched data, so it is not surfaced here (see
+  the Phase 3 report for the owner feature note).
+
+---
+
+## 7. Component library (shadcn/ui, New York)
 
 `src/components/ui/`: `button`, `card`, `badge`, `avatar`, `dropdown-menu`,
 `separator`, `sheet`, `skeleton`, `tooltip`, `input`, `label`, `form`,
