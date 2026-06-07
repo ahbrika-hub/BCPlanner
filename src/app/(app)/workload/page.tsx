@@ -59,7 +59,7 @@ export default async function WorkloadPage() {
         />
       ) : (
         <div className="rounded-lg border">
-          <Table>
+          <Table stickyFirstColumn>
             <TableHeader>
               <TableRow>
                 <TableHead>Employee</TableHead>

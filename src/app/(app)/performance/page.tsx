@@ -83,7 +83,7 @@ export default async function PerformancePage() {
                 description="Your evaluations will appear here."
               />
             ) : (
-              <Table>
+              <Table stickyFirstColumn>
                 <TableHeader>
                   <TableRow>
                     <TableHead>Period</TableHead>
@@ -141,7 +141,7 @@ export default async function PerformancePage() {
         />
       ) : (
         <div className="rounded-lg border">
-          <Table>
+          <Table stickyFirstColumn>
             <TableHeader>
               <TableRow>
                 <TableHead>Employee</TableHead>

@@ -72,6 +72,9 @@ export function AppNav({
                     aria-current={active ? "page" : undefined}
                     className={cn(
                       "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium",
+                      // ≥44px touch target in the mobile drawer; compact on the
+                      // desktop sidebar (md+).
+                      "min-h-11 md:min-h-9",
                       "transition-colors motion-reduce:transition-none",
                       "focus-visible:ring-ring/50 outline-none focus-visible:ring-2",
                       "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",

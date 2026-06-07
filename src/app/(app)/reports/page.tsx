@@ -100,7 +100,7 @@ export default async function ReportsPage({
 
       <ReportFilters businessLines={businessLines} />
 
-      <div className="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
+      <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <KpiCard label="Tasks" value={summary.count} />
         <KpiCard
           label="Completed"
@@ -153,7 +153,7 @@ export default async function ReportsPage({
         />
       ) : (
         <div className="rounded-lg border">
-          <Table>
+          <Table stickyFirstColumn>
             <TableHeader>
               <TableRow>
                 <TableHead>Task No</TableHead>

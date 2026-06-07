@@ -128,7 +128,7 @@ function RecurringDialog({
             <Label htmlFor="description">Description</Label>
             <Textarea id="description" rows={2} {...register("description")} />
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div className="space-y-2">
               <Label>Frequency</Label>
               <Select
@@ -167,7 +167,7 @@ function RecurringDialog({
               </Select>
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div className="space-y-2">
               <Label>Business Line</Label>
               <Select
@@ -205,7 +205,7 @@ function RecurringDialog({
               </Select>
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="start_date">Start date</Label>
               <Input id="start_date" type="date" {...register("start_date")} />
@@ -295,7 +295,7 @@ export function RecurringManager({
         />
       ) : (
         <div className="rounded-lg border">
-          <Table>
+          <Table stickyFirstColumn>
             <TableHeader>
               <TableRow>
                 <TableHead>Title</TableHead>

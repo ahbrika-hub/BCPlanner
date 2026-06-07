@@ -130,7 +130,7 @@ function EditUserDialog({
               onChange={(e) => setJobTitle(e.target.value)}
             />
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div className="space-y-2">
               <Label>Role</Label>
               <Select
@@ -330,7 +330,7 @@ export function UsersManager({
         />
       ) : (
         <div className="rounded-lg border">
-          <Table>
+          <Table stickyFirstColumn>
             <TableHeader>
               <TableRow>
                 <TableHead>User</TableHead>

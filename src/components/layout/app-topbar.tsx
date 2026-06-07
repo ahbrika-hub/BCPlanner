@@ -40,7 +40,12 @@ export function AppTopbar({ unreadCount = 0 }: { unreadCount?: number }) {
     <header className="bg-background flex h-14 items-center gap-2 border-b px-3 md:hidden">
       <Sheet open={open} onOpenChange={setOpen}>
         <SheetTrigger asChild>
-          <Button variant="ghost" size="icon" aria-label="Open navigation">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="size-11"
+            aria-label="Open navigation"
+          >
             <Menu className="size-5" />
           </Button>
         </SheetTrigger>
@@ -60,7 +65,13 @@ export function AppTopbar({ unreadCount = 0 }: { unreadCount?: number }) {
         TSS Planner
       </span>
 
-      <Button asChild variant="ghost" size="icon" aria-label="Notifications">
+      <Button
+        asChild
+        variant="ghost"
+        size="icon"
+        className="size-11"
+        aria-label="Notifications"
+      >
         <Link href="/notifications" className="relative">
           <Bell className="size-5" />
           {unreadCount > 0 && (
@@ -73,7 +84,12 @@ export function AppTopbar({ unreadCount = 0 }: { unreadCount?: number }) {
 
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="ghost" size="icon" aria-label="User menu">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="size-11"
+            aria-label="User menu"
+          >
             <Avatar className="size-7">
               <AvatarFallback className="bg-primary text-primary-foreground text-xs">
                 {initials(profile.full_name, profile.email)}
