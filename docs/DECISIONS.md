@@ -24,7 +24,7 @@ rewriting history.
 Seven business lines are in scope:
 
 1. **TSS**
-2. **Meraap**
+2. **Merapp**
 3. **ARTC**
 4. **Driving School**
 5. **Dealership**

@@ -16,7 +16,7 @@ Suggested filenames for the seeded lines (name → id slug):
 | Business line  | logo                | file                              |
 | -------------- | ------------------- | --------------------------------- |
 | TSS            | SAPTCO TSS          | `public/business-lines/tss.svg`   |
-| Meraap         | merapp / مرآب       | `public/business-lines/meraap.svg`|
+| Merapp         | merapp / مرآب       | `public/business-lines/merapp.svg`|
 | ARTC           | Aalam Alreyadah     | `public/business-lines/artc.svg`  |
 | Driving School | SAPTCO Driving School | `public/business-lines/driving-school.svg` |
 
