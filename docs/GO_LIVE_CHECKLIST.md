@@ -57,7 +57,7 @@ select proname from pg_proc where proname in
 select role, count(*) from public.role_permissions group by role;     -- admin 38, section_head 35, employee 15, ceo 10
 select count(*) from public.permissions;                              -- 38
 select string_agg(name, ', ' order by sort_order) from public.business_lines;
-                                                                      -- TSS, Meraap, ARTC, Driving School, Dealership, Corporate, General
+                                                                      -- TSS, Merapp, ARTC, Driving School, Dealership, Corporate, General
 -- every public table has RLS
 select count(*) from pg_class c join pg_namespace n on n.oid=c.relnamespace
   where n.nspname='public' and c.relkind='r' and not c.relrowsecurity;  -- 0

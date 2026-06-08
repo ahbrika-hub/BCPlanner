@@ -6,7 +6,7 @@
 -- ── Business lines (sort_order 1–7) ───────────────────────────────────────
 insert into public.business_lines (name, sort_order) values
   ('TSS', 1),
-  ('Meraap', 2),
+  ('Merapp', 2),
   ('ARTC', 3),
   ('Driving School', 4),
   ('Dealership', 5),

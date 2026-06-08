@@ -17,7 +17,7 @@ order). Reference/seed data is in `supabase/seed.sql`. RLS tests are in
 | `departments`                    | Departments (single department: Business Consulting).                                                          |
 | `permissions`                    | Permission catalogue (`key`, `category`).                                                                      |
 | `role_permissions`               | Maps each `user_role` to permission keys. Drives `authorize()`.                                                |
-| `business_lines`                 | The 7 business lines (TSS, Meraap, ARTC, Driving School, Dealership, Corporate, General).                      |
+| `business_lines`                 | The 7 business lines (TSS, Merapp, ARTC, Driving School, Dealership, Corporate, General).                      |
 | `app_settings`                   | Key/value app configuration (e.g. `due_soon_threshold`, `no_update_threshold`).                                |
 | `tasks`                          | Core task records with lifecycle status, assignment, effort, closure fields.                                   |
 | `task_updates`                   | **Immutable** progress updates; syncs task progress and auto-advances to `in_progress`.                        |
