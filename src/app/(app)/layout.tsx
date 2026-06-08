@@ -21,7 +21,11 @@ export default async function AppLayout({
 
   const profile = await getCurrentProfile();
   if (!profile || !profile.is_active) {
-    redirect("/login?error=inactive");
+    redirect(
+      profile?.account_status === "pending"
+        ? "/login?error=pending"
+        : "/login?error=inactive",
+    );
   }
 
   const permissions = await getCurrentPermissions();

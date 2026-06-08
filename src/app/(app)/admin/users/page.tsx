@@ -1,10 +1,11 @@
-import { listUsers } from "@/lib/data/users";
+import { listUsers, listPendingSignups } from "@/lib/data/users";
 import { listDepartments } from "@/lib/data/departments";
 import { getCurrentProfile, getCurrentPermissions } from "@/lib/auth/session";
 import { can } from "@/lib/permissions";
 import { PageHeader } from "@/components/layout/page-header";
 import { EmptyState } from "@/components/ui/empty-state";
 import { UsersManager } from "@/components/users/users-manager";
+import { PendingSignups } from "@/components/users/pending-signups";
 
 export default async function UsersPage() {
   const profile = await getCurrentProfile();
@@ -22,9 +23,11 @@ export default async function UsersPage() {
     );
   }
 
-  const [users, departments] = await Promise.all([
+  const canApprove = can("signups.approve", permissions);
+  const [users, departments, pending] = await Promise.all([
     listUsers(),
     listDepartments(),
+    canApprove ? listPendingSignups() : Promise.resolve([]),
   ]);
 
   return (
@@ -33,6 +36,9 @@ export default async function UsersPage() {
         title="User Management"
         subtitle="Roles, departments, and access"
       />
+      {canApprove && (
+        <PendingSignups users={pending} departments={departments} />
+      )}
       <UsersManager
         users={users}
         departments={departments}
