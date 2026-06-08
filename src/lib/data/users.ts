@@ -47,6 +47,18 @@ export async function getUser(id: string): Promise<UserWithDepartment | null> {
   return (data as unknown as UserWithDepartment) ?? null;
 }
 
+/** Pending self-registrations awaiting approval (oldest first). */
+export async function listPendingSignups(): Promise<UserWithDepartment[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("*, department:departments!profiles_department_id_fkey(id, name)")
+    .eq("account_status", "pending")
+    .order("created_at", { ascending: true });
+  if (error) throw new Error(error.message);
+  return (data ?? []) as unknown as UserWithDepartment[];
+}
+
 export async function updateUser(
   id: string,
   patch: Tables["profiles"]["Update"],

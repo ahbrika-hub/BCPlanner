@@ -7,6 +7,31 @@ export type Json =
   | Json[]
 
 export type Database = {
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
   public: {
     Tables: {
       app_settings: {
@@ -302,6 +327,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          account_status: Database["public"]["Enums"]["account_status"]
           avatar_url: string | null
           created_at: string
           department_id: string | null
@@ -314,6 +340,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          account_status?: Database["public"]["Enums"]["account_status"]
           avatar_url?: string | null
           created_at?: string
           department_id?: string | null
@@ -326,6 +353,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          account_status?: Database["public"]["Enums"]["account_status"]
           avatar_url?: string | null
           created_at?: string
           department_id?: string | null
@@ -856,9 +884,6 @@ export type Database = {
         }
         Returns: string
       }
-      dearmor: { Args: { "": string }; Returns: string }
-      gen_random_uuid: { Args: never; Returns: string }
-      gen_salt: { Args: { "": string }; Returns: string }
       generate_due_recurring_tasks: { Args: never; Returns: number }
       get_my_permissions: { Args: never; Returns: string[] }
       notify_role: {
@@ -871,12 +896,9 @@ export type Database = {
         }
         Returns: number
       }
-      pgp_armor_headers: {
-        Args: { "": string }
-        Returns: Record<string, unknown>[]
-      }
     }
     Enums: {
+      account_status: "pending" | "active" | "inactive"
       comment_type_enum: "general" | "task_specific" | "ceo_office_comment"
       notification_type:
         | "task_assigned"
@@ -1030,8 +1052,12 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {
+      account_status: ["pending", "active", "inactive"],
       comment_type_enum: ["general", "task_specific", "ceo_office_comment"],
       notification_type: [
         "task_assigned",
@@ -1065,3 +1091,4 @@ export const Constants = {
     },
   },
 } as const
+
