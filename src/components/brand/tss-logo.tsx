@@ -4,15 +4,17 @@ import { useState } from "react";
 
 import { cn } from "@/lib/utils";
 
+const SOURCES = ["/brand/tss-logo.svg", "/brand/tss-logo.png"];
+
 /**
- * TSS brand lockup for auth screens. Renders /brand/tss-logo.svg when the asset
- * is present; falls back to the text wordmark on load error (so the build is
- * complete with zero logo assets).
+ * TSS brand lockup for auth screens. Resolves the logo by extension —
+ * /brand/tss-logo.svg → .png — and falls back to the text wordmark when neither
+ * is present (mirrors the business-line selector's logo resolution).
  */
 export function TssLogo({ className }: { className?: string }) {
-  const [failed, setFailed] = useState(false);
+  const [idx, setIdx] = useState(0);
 
-  if (failed) {
+  if (idx >= SOURCES.length) {
     return (
       <span
         className={cn(
@@ -28,10 +30,10 @@ export function TssLogo({ className }: { className?: string }) {
   return (
     // eslint-disable-next-line @next/next/no-img-element
     <img
-      src="/brand/tss-logo.svg"
+      src={SOURCES[idx]}
       alt="TSS Planner"
       className={cn("h-12 w-auto", className)}
-      onError={() => setFailed(true)}
+      onError={() => setIdx((i) => i + 1)}
     />
   );
 }
