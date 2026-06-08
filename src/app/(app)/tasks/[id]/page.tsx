@@ -14,6 +14,8 @@ import {
   priorityLabels,
 } from "@/lib/format";
 import { PageHeader } from "@/components/layout/page-header";
+import { DASHBOARD_UPLOAD_CATEGORY } from "@/lib/dashboard/constants";
+import { WeeklyDashboardUpload } from "@/components/dashboard/weekly-upload";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -90,6 +92,11 @@ export default async function TaskDetailPage({
           />
         }
       />
+
+      {task.category === DASHBOARD_UPLOAD_CATEGORY &&
+        task.assignee_id === profile.id && (
+          <WeeklyDashboardUpload taskId={task.id} />
+        )}
 
       <div className="mb-4 flex flex-wrap items-center gap-2">
         <StatusBadge status={task.status} />

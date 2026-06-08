@@ -130,6 +130,58 @@ export type Database = {
         }
         Relationships: []
       }
+      dashboard_snapshots: {
+        Row: {
+          created_at: string
+          data: Json
+          id: string
+          raw_file_path: string | null
+          task_id: string | null
+          uploaded_by: string | null
+          week_start: string
+        }
+        Insert: {
+          created_at?: string
+          data: Json
+          id?: string
+          raw_file_path?: string | null
+          task_id?: string | null
+          uploaded_by?: string | null
+          week_start: string
+        }
+        Update: {
+          created_at?: string
+          data?: Json
+          id?: string
+          raw_file_path?: string | null
+          task_id?: string | null
+          uploaded_by?: string | null
+          week_start?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dashboard_snapshots_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dashboard_snapshots_uploaded_by_fkey"
+            columns: ["uploaded_by"]
+            isOneToOne: false
+            referencedRelation: "daily_employee_workload"
+            referencedColumns: ["employee_id"]
+          },
+          {
+            foreignKeyName: "dashboard_snapshots_uploaded_by_fkey"
+            columns: ["uploaded_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       departments: {
         Row: {
           created_at: string
