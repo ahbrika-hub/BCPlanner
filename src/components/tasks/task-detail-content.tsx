@@ -132,6 +132,21 @@ export async function TaskDetailContent({ id }: { id: string }) {
               value={task.estimated_effort_hours ?? "—"}
             />
             <Field label="Completed" value={formatDate(task.completed_at)} />
+            {task.sharepoint_url && (
+              <Field
+                label="SharePoint"
+                value={
+                  <a
+                    href={task.sharepoint_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-primary break-all hover:underline"
+                  >
+                    Open in SharePoint
+                  </a>
+                }
+              />
+            )}
           </dl>
           {task.closure_summary && (
             <div className="border-t pt-3">
