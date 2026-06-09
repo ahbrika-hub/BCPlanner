@@ -184,6 +184,22 @@ export function NewTaskDialog({
             </div>
           </div>
 
+          <div className="space-y-2">
+            <Label htmlFor="sharepoint_url">SharePoint link (optional)</Label>
+            <Input
+              id="sharepoint_url"
+              type="url"
+              inputMode="url"
+              placeholder="https://…"
+              {...register("sharepoint_url")}
+            />
+            {errors.sharepoint_url && (
+              <p className="text-destructive text-xs">
+                {errors.sharepoint_url.message}
+              </p>
+            )}
+          </div>
+
           <DialogFooter>
             <Button type="submit" disabled={pending}>
               {pending && <Loader2 className="size-4 animate-spin" />}

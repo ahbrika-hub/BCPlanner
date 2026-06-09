@@ -18,6 +18,25 @@ export const taskStatusSchema = z.enum([
 
 export const taskPrioritySchema = z.enum(["low", "medium", "high", "critical"]);
 
+/** Optional SharePoint link — must be a valid https URL (rejects http/javascript/malformed). */
+function isHttpsUrl(v: string): boolean {
+  try {
+    return new URL(v).protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+export const sharepointUrlSchema = z.preprocess(
+  (v) => (typeof v === "string" && v.trim() === "" ? undefined : v),
+  z
+    .string()
+    .trim()
+    .refine(isHttpsUrl, {
+      message: "SharePoint link must be a valid https URL.",
+    })
+    .optional(),
+);
+
 export const createTaskSchema = z.object({
   title: z.string().min(3).max(255),
   description: z.string().optional(),
@@ -28,6 +47,7 @@ export const createTaskSchema = z.object({
   start_date: z.iso.date().optional(),
   due_date: z.iso.date().optional(),
   estimated_effort_hours: z.number().positive().optional(),
+  sharepoint_url: sharepointUrlSchema,
 });
 
 export const updateTaskSchema = createTaskSchema.partial().extend({

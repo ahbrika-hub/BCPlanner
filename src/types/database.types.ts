@@ -788,6 +788,7 @@ export type Database = {
           quality_rating: number | null
           reopened_at: string | null
           required_support: string | null
+          sharepoint_url: string | null
           start_date: string | null
           status: Database["public"]["Enums"]["task_status"]
           task_no: string | null
@@ -817,6 +818,7 @@ export type Database = {
           quality_rating?: number | null
           reopened_at?: string | null
           required_support?: string | null
+          sharepoint_url?: string | null
           start_date?: string | null
           status?: Database["public"]["Enums"]["task_status"]
           task_no?: string | null
@@ -846,6 +848,7 @@ export type Database = {
           quality_rating?: number | null
           reopened_at?: string | null
           required_support?: string | null
+          sharepoint_url?: string | null
           start_date?: string | null
           status?: Database["public"]["Enums"]["task_status"]
           task_no?: string | null

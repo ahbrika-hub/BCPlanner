@@ -40,6 +40,16 @@ function QueueItem({
               : ""}
             {formatDate(task.created_at)}
           </p>
+          {task.sharepoint_url && (
+            <a
+              href={task.sharepoint_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-primary mt-1 inline-block text-xs break-all hover:underline"
+            >
+              Open in SharePoint
+            </a>
+          )}
         </div>
         <TaskActionBar
           taskId={task.id}
