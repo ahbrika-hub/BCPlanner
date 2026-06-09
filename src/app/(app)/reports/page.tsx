@@ -48,14 +48,21 @@ export default async function ReportsPage({
   const sp = await searchParams;
   const str = (v: string | string[] | undefined) =>
     typeof v === "string" && v ? v : undefined;
+  // Select filters use "all" as the sentinel for "no filter" (the UI deletes the
+  // param, but a hand-crafted/stale ?key=all must not become an eq("all") that
+  // empties the report).
+  const sel = (v: string | string[] | undefined) => {
+    const s = str(v);
+    return s && s !== "all" ? s : undefined;
+  };
 
   const [{ tasks, summary }, businessLines, assignees] = await Promise.all([
     getReportData({
       from: str(sp.from),
       to: str(sp.to),
-      business_line_id: str(sp.business_line),
-      assignee_id: str(sp.assignee),
-      status: str(sp.status) as TaskStatus | undefined,
+      business_line_id: sel(sp.business_line),
+      assignee_id: sel(sp.assignee),
+      status: sel(sp.status) as TaskStatus | undefined,
     }),
     listBusinessLines(),
     listAssignableUsers(),
