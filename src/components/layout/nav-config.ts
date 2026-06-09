@@ -10,6 +10,7 @@ import {
   UserCog,
   Settings,
   Shield,
+  FolderKanban,
   type LucideIcon,
 } from "lucide-react";
 
@@ -119,6 +120,12 @@ export const navSections: NavSection[] = [
         href: "/admin/users",
         icon: UserCog,
         permission: "users.read",
+      },
+      {
+        label: "Projects",
+        href: "/admin/projects",
+        icon: FolderKanban,
+        permission: "projects.manage",
       },
       {
         label: "Settings",
