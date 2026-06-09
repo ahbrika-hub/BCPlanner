@@ -7,7 +7,6 @@ import {
   TrendingUp,
   RefreshCw,
   BarChart3,
-  LineChart,
   UserCog,
   Settings,
   Shield,
@@ -107,12 +106,9 @@ export const navSections: NavSection[] = [
         icon: BarChart3,
         permission: "reports.read",
       },
-      {
-        label: "Weekly Dashboard",
-        href: "/dashboard/weekly",
-        icon: LineChart,
-        permission: "dashboard.read",
-      },
+      // The weekly ("Business Lines") dashboard is now reached via the selector
+      // on the Dashboard page (/dashboard?view=business-lines), so it no longer
+      // needs a separate nav entry here.
     ],
   },
   {
