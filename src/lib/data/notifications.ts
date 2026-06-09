@@ -37,3 +37,37 @@ export async function markAllRead(): Promise<void> {
     .update({ is_read: true, read_at: new Date().toISOString() })
     .eq("is_read", false);
 }
+
+/**
+ * Bulk mark read/unread, scoped to the owner both explicitly (user_id) and by
+ * RLS (notifications_update policy). Unread clears read_at.
+ */
+export async function markByIds(
+  userId: string,
+  ids: string[],
+  read: boolean,
+): Promise<void> {
+  if (ids.length === 0) return;
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("notifications")
+    .update({ is_read: read, read_at: read ? new Date().toISOString() : null })
+    .eq("user_id", userId)
+    .in("id", ids);
+  if (error) throw new Error(error.message);
+}
+
+/** Bulk delete, scoped to the owner (user_id + RLS notifications_delete). */
+export async function deleteByIds(
+  userId: string,
+  ids: string[],
+): Promise<void> {
+  if (ids.length === 0) return;
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("notifications")
+    .delete()
+    .eq("user_id", userId)
+    .in("id", ids);
+  if (error) throw new Error(error.message);
+}
