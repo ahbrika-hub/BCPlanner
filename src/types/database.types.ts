@@ -430,6 +430,41 @@ export type Database = {
           },
         ]
       }
+      projects: {
+        Row: {
+          business_line_id: string | null
+          created_at: string
+          id: string
+          is_active: boolean
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          business_line_id?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          business_line_id?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "projects_business_line_id_fkey"
+            columns: ["business_line_id"]
+            isOneToOne: false
+            referencedRelation: "business_lines"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       recurring_tasks: {
         Row: {
           assignee_id: string | null
