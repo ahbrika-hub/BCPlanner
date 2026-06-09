@@ -437,8 +437,10 @@ export type Database = {
           category: string | null
           created_at: string
           created_by: string
+          deleted_at: string | null
           description: string | null
           estimated_effort_hours: number | null
+          expected_end_date: string | null
           frequency: Database["public"]["Enums"]["recurrence_freq"]
           id: string
           is_active: boolean
@@ -454,8 +456,10 @@ export type Database = {
           category?: string | null
           created_at?: string
           created_by: string
+          deleted_at?: string | null
           description?: string | null
           estimated_effort_hours?: number | null
+          expected_end_date?: string | null
           frequency: Database["public"]["Enums"]["recurrence_freq"]
           id?: string
           is_active?: boolean
@@ -471,8 +475,10 @@ export type Database = {
           category?: string | null
           created_at?: string
           created_by?: string
+          deleted_at?: string | null
           description?: string | null
           estimated_effort_hours?: number | null
+          expected_end_date?: string | null
           frequency?: Database["public"]["Enums"]["recurrence_freq"]
           id?: string
           is_active?: boolean

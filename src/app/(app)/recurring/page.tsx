@@ -1,4 +1,7 @@
-import { listRecurringTasks } from "@/lib/data/recurring";
+import {
+  listRecurringTasks,
+  listDeletedRecurringTasks,
+} from "@/lib/data/recurring";
 import { listBusinessLines } from "@/lib/data/business-lines";
 import { listAssignableUsers } from "@/lib/data/profiles";
 import { getCurrentProfile, getCurrentPermissions } from "@/lib/auth/session";
@@ -23,8 +26,9 @@ export default async function RecurringPage() {
     );
   }
 
-  const [rows, businessLines, users] = await Promise.all([
+  const [rows, deletedRows, businessLines, users] = await Promise.all([
     listRecurringTasks(),
+    listDeletedRecurringTasks(),
     listBusinessLines(),
     listAssignableUsers(),
   ]);
@@ -41,6 +45,7 @@ export default async function RecurringPage() {
       </p>
       <RecurringManager
         rows={rows}
+        deletedRows={deletedRows}
         businessLines={businessLines}
         users={users}
       />

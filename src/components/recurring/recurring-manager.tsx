@@ -4,7 +4,15 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Plus, Loader2, Play, Pencil, Trash2 } from "lucide-react";
+import {
+  Plus,
+  Loader2,
+  Play,
+  Pencil,
+  Trash2,
+  RotateCcw,
+  Info,
+} from "lucide-react";
 import { toast } from "sonner";
 import type { z } from "zod";
 
@@ -13,6 +21,7 @@ import {
   createRecurringAction,
   updateRecurringAction,
   deleteRecurringAction,
+  restoreRecurringAction,
   generateNowAction,
 } from "@/lib/actions/recurring";
 import { formatDate } from "@/lib/format";
@@ -47,8 +56,15 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { EmptyState } from "@/components/ui/empty-state";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 type FormValues = z.input<typeof createRecurringSchema>;
+type EffortUnit = "hours" | "days";
+const HOURS_PER_DAY = 8;
 
 function RecurringDialog({
   businessLines,
@@ -83,11 +99,50 @@ function RecurringDialog({
           priority: existing.priority,
           frequency: existing.frequency,
           start_date: existing.start_date,
+          expected_end_date: existing.expected_end_date ?? undefined,
           estimated_effort_hours: existing.estimated_effort_hours ?? undefined,
           is_active: existing.is_active,
         }
       : { priority: "medium", frequency: "weekly", is_active: true },
   });
+
+  // Effort can be entered in hours or days; the canonical stored value is always
+  // hours (days × 8). No stored unit column — purely an input/display convenience.
+  const [unit, setUnit] = useState<EffortUnit>("hours");
+  const [effortInput, setEffortInput] = useState(
+    existing?.estimated_effort_hours != null
+      ? String(existing.estimated_effort_hours)
+      : "",
+  );
+
+  const writeHours = (input: string, u: EffortUnit) => {
+    const n = input.trim() === "" ? undefined : Number(input);
+    const hours =
+      n === undefined || Number.isNaN(n)
+        ? undefined
+        : u === "days"
+          ? n * HOURS_PER_DAY
+          : n;
+    setValue("estimated_effort_hours", hours as never, {
+      shouldValidate: false,
+    });
+  };
+
+  const onEffortChange = (v: string) => {
+    setEffortInput(v);
+    writeHours(v, unit);
+  };
+
+  // Switching units keeps the stored hours constant; only the displayed number
+  // is converted.
+  const onUnitChange = (u: EffortUnit) => {
+    const n = effortInput.trim() === "" ? undefined : Number(effortInput);
+    if (n !== undefined && !Number.isNaN(n)) {
+      const hours = unit === "days" ? n * HOURS_PER_DAY : n;
+      setEffortInput(u === "days" ? String(hours / HOURS_PER_DAY) : String(hours));
+    }
+    setUnit(u);
+  };
 
   const onSubmit = (values: FormValues) => {
     startTransition(async () => {
@@ -214,15 +269,52 @@ function RecurringDialog({
               )}
             </div>
             <div className="space-y-2">
-              <Label htmlFor="hours">Est. hours</Label>
+              <Label htmlFor="expected_end_date">Expected end date</Label>
               <Input
-                id="hours"
-                type="number"
-                step="0.5"
-                min="0"
-                {...register("estimated_effort_hours", { valueAsNumber: true })}
+                id="expected_end_date"
+                type="date"
+                {...register("expected_end_date")}
               />
+              {errors.expected_end_date && (
+                <p className="text-destructive text-xs">
+                  {errors.expected_end_date.message}
+                </p>
+              )}
             </div>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="effort">Estimated effort</Label>
+            <div className="flex gap-2">
+              <Input
+                id="effort"
+                type="number"
+                step={unit === "days" ? "0.25" : "0.5"}
+                min="0"
+                className="flex-1"
+                value={effortInput}
+                onChange={(e) => onEffortChange(e.target.value)}
+              />
+              <Select
+                value={unit}
+                onValueChange={(v) => onUnitChange(v as EffortUnit)}
+              >
+                <SelectTrigger className="w-28">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="hours">Hours</SelectItem>
+                  <SelectItem value="days">Days</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <p className="text-muted-foreground text-xs">
+              Stored in hours (1 day = 8 hours).
+            </p>
+            {errors.estimated_effort_hours && (
+              <p className="text-destructive text-xs">
+                {errors.estimated_effort_hours.message}
+              </p>
+            )}
           </div>
           <DialogFooter>
             <Button type="submit" disabled={pending}>
@@ -238,10 +330,12 @@ function RecurringDialog({
 
 export function RecurringManager({
   rows,
+  deletedRows,
   businessLines,
   users,
 }: {
   rows: RecurringWithRelations[];
+  deletedRows: RecurringWithRelations[];
   businessLines: BusinessLineRow[];
   users: AssignableUser[];
 }) {
@@ -265,17 +359,44 @@ export function RecurringManager({
     });
   };
 
+  const restore = (id: string) =>
+    act(() => restoreRecurringAction(id), "Recurring task restored");
+
+  // Soft-delete with an Undo toast (restores it within the toast window).
+  const remove = (id: string) =>
+    startTransition(async () => {
+      const res = await deleteRecurringAction(id);
+      if (res.ok) {
+        toast.success("Recurring task deleted", {
+          action: { label: "Undo", onClick: () => restore(id) },
+        });
+        router.refresh();
+      } else {
+        toast.error(res.error ?? "Failed");
+      }
+    });
+
   return (
     <>
       <div className="mb-4 flex justify-end gap-2">
-        <Button
-          variant="outline"
-          disabled={pending}
-          onClick={() => act(generateNowAction, "Done")}
-        >
-          <Play className="size-4" />
-          Generate Due Tasks Now
-        </Button>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="outline"
+              disabled={pending}
+              onClick={() => act(generateNowAction, "Done")}
+            >
+              <Play className="size-4" />
+              Generate Due Tasks Now
+              <Info className="text-muted-foreground size-3.5" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent className="max-w-xs">
+            Runs the schedule now instead of waiting for the daily job: creates a
+            task from every active recurring template whose next generation date
+            is today or earlier, then advances each template’s schedule.
+          </TooltipContent>
+        </Tooltip>
         <RecurringDialog
           businessLines={businessLines}
           users={users}
@@ -353,9 +474,7 @@ export function RecurringManager({
                       size="icon"
                       aria-label="Delete"
                       disabled={pending}
-                      onClick={() =>
-                        act(() => deleteRecurringAction(r.id), "Deleted")
-                      }
+                      onClick={() => remove(r.id)}
                     >
                       <Trash2 className="size-4" />
                     </Button>
@@ -364,6 +483,48 @@ export function RecurringManager({
               ))}
             </TableBody>
           </Table>
+        </div>
+      )}
+
+      {deletedRows.length > 0 && (
+        <div className="mt-8">
+          <h2 className="text-fg-muted mb-2 text-xs font-medium tracking-wide uppercase">
+            Recently deleted
+          </h2>
+          <div className="rounded-lg border">
+            <Table stickyFirstColumn>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Title</TableHead>
+                  <TableHead>Frequency</TableHead>
+                  <TableHead>Deleted</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {deletedRows.map((r) => (
+                  <TableRow key={r.id} className="text-muted-foreground">
+                    <TableCell className="font-medium">{r.title}</TableCell>
+                    <TableCell className="capitalize">{r.frequency}</TableCell>
+                    <TableCell className="text-sm">
+                      {formatDate(r.deleted_at)}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        disabled={pending}
+                        onClick={() => restore(r.id)}
+                      >
+                        <RotateCcw className="size-4" />
+                        Restore
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
         </div>
       )}
     </>

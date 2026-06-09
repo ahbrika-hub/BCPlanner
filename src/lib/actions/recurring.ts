@@ -11,7 +11,8 @@ import { can } from "@/lib/permissions";
 import {
   createRecurringTask,
   updateRecurringTask,
-  deleteRecurringTask,
+  softDeleteRecurringTask,
+  restoreRecurringTask,
   generateDueTasks,
 } from "@/lib/data/recurring";
 import type { ActionResult } from "@/lib/actions/tasks";
@@ -75,11 +76,27 @@ export async function updateRecurringAction(
   }
 }
 
+/** Soft-delete (reversible). The row is hidden from lists and stops generating. */
 export async function deleteRecurringAction(id: string): Promise<ActionResult> {
   const actor = await ensureManager();
   if ("ok" in actor) return actor;
   try {
-    await deleteRecurringTask(id);
+    await softDeleteRecurringTask(id);
+    revalidatePath("/recurring");
+    return { ok: true, id };
+  } catch (e) {
+    return fail(errMessage(e));
+  }
+}
+
+/** Restore a soft-deleted template (used by the Undo toast and Restore button). */
+export async function restoreRecurringAction(
+  id: string,
+): Promise<ActionResult> {
+  const actor = await ensureManager();
+  if ("ok" in actor) return actor;
+  try {
+    await restoreRecurringTask(id);
     revalidatePath("/recurring");
     return { ok: true, id };
   } catch (e) {

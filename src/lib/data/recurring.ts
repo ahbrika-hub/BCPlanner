@@ -19,7 +19,22 @@ export async function listRecurringTasks(): Promise<RecurringWithRelations[]> {
   const { data, error } = await supabase
     .from("recurring_tasks")
     .select(SELECT)
+    .is("deleted_at", null)
     .order("next_generation_date", { ascending: true });
+  if (error) throw new Error(error.message);
+  return (data ?? []) as unknown as RecurringWithRelations[];
+}
+
+/** Soft-deleted templates (for the Restore surface). */
+export async function listDeletedRecurringTasks(): Promise<
+  RecurringWithRelations[]
+> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("recurring_tasks")
+    .select(SELECT)
+    .not("deleted_at", "is", null)
+    .order("deleted_at", { ascending: false });
   if (error) throw new Error(error.message);
   return (data ?? []) as unknown as RecurringWithRelations[];
 }
@@ -32,6 +47,7 @@ export async function getRecurringTask(
     .from("recurring_tasks")
     .select(SELECT)
     .eq("id", id)
+    .is("deleted_at", null)
     .maybeSingle();
   return (data as unknown as RecurringWithRelations) ?? null;
 }
@@ -64,11 +80,26 @@ export async function updateRecurringTask(
   return data;
 }
 
-export async function deleteRecurringTask(id: string): Promise<void> {
+/**
+ * Soft-delete: set deleted_at and deactivate so generate_due_recurring_tasks()
+ * (which only processes active templates) stops materialising it. Reversible
+ * via {@link restoreRecurringTask}.
+ */
+export async function softDeleteRecurringTask(id: string): Promise<void> {
   const supabase = await createClient();
   const { error } = await supabase
     .from("recurring_tasks")
-    .delete()
+    .update({ deleted_at: new Date().toISOString(), is_active: false })
+    .eq("id", id);
+  if (error) throw new Error(error.message);
+}
+
+/** Restore a soft-deleted template (clears deleted_at; re-activates it). */
+export async function restoreRecurringTask(id: string): Promise<void> {
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("recurring_tasks")
+    .update({ deleted_at: null, is_active: true })
     .eq("id", id);
   if (error) throw new Error(error.message);
 }
