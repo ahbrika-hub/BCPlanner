@@ -1,3 +1,10 @@
+// Client component: it renders interactive drill-downs (DrilldownKpi,
+// StatusDistributionDrilldown) and passes Lucide icon components to them, so the
+// whole view must live on the client — a Server Component cannot pass a function
+// (the icon) across the RSC boundary to a Client Component. Data still arrives
+// as serializable props from the async server container.
+"use client";
+
 import { ListTodo, CheckCircle2, AlertTriangle, Star } from "lucide-react";
 
 import type {
