@@ -9,10 +9,10 @@ import type {
   getRecentActivity,
 } from "@/lib/data/analytics";
 import type { getWorkload } from "@/lib/data/workload";
-import { KpiCard } from "@/components/ui/kpi-card";
 import { TokenPill } from "@/components/ui/token-pill";
 import { TaskTable } from "@/components/dashboard/task-table";
-import { StatusDistributionChart } from "@/components/charts/status-distribution-chart";
+import { DrilldownKpi } from "@/components/dashboard/drilldown-kpi";
+import { StatusDistributionDrilldown } from "@/components/dashboard/status-distribution-drilldown";
 import { TasksOverTimeChart } from "@/components/charts/tasks-over-time-chart";
 import {
   Card,
@@ -62,23 +62,41 @@ export function OperationalDashboardView({
         aria-label="Key metrics"
         className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4"
       >
-        <KpiCard
+        <DrilldownKpi
           label="Pending approvals"
           value={stats.pendingApprovals}
           icon={ClipboardCheck}
+          drilldown={{ kind: "status", status: "pending_approval" }}
+          title="Pending approval"
+          description="Tasks awaiting approval."
+          viewAllHref="/tasks?status=pending_approval"
         />
-        <KpiCard
+        <DrilldownKpi
           label="Pending review"
           value={stats.pendingReview}
           icon={Eye}
           accent="var(--color-status-pending_review)"
+          drilldown={{ kind: "status", status: "pending_review" }}
+          title="Pending review"
+          description="Tasks awaiting review."
+          viewAllHref="/tasks?status=pending_review"
         />
-        <KpiCard label="Active tasks" value={stats.active} icon={ListTodo} />
-        <KpiCard
+        <DrilldownKpi
+          label="Active tasks"
+          value={stats.active}
+          icon={ListTodo}
+          drilldown={{ kind: "active" }}
+          title="Active tasks"
+          description="Tasks currently in flight."
+        />
+        <DrilldownKpi
           label="Overdue"
           value={stats.overdue}
           icon={AlertTriangle}
           accent="var(--color-danger)"
+          drilldown={{ kind: "overdue" }}
+          title="Overdue tasks"
+          description="Past due and not yet completed."
         />
       </section>
 
@@ -108,6 +126,11 @@ export function OperationalDashboardView({
         <Card>
           <CardHeader>
             <CardTitle>Team workload</CardTitle>
+            <CardAction>
+              <Button asChild size="sm" variant="outline">
+                <Link href="/workload">Open</Link>
+              </Button>
+            </CardAction>
           </CardHeader>
           <CardContent className="flex flex-wrap gap-2">
             <TokenPill
@@ -129,7 +152,7 @@ export function OperationalDashboardView({
             <CardTitle>Status distribution</CardTitle>
           </CardHeader>
           <CardContent>
-            <StatusDistributionChart data={dist} />
+            <StatusDistributionDrilldown data={dist} />
           </CardContent>
         </Card>
         <Card>

@@ -19,6 +19,39 @@ import { EmptyState } from "@/components/ui/empty-state";
 
 export type BarDatum = { label: string; count: number };
 
+// Recharts LabelList content props are loosely typed (string | number | undefined).
+type BarLabelProps = {
+  x?: string | number;
+  y?: string | number;
+  width?: string | number;
+  height?: string | number;
+  value?: string | number | boolean | null;
+};
+
+/**
+ * Value printed inside the bar when it's wide enough to stay legible (white on
+ * the bar fill); otherwise just past the bar end in muted text.
+ */
+function renderBarLabel(props: BarLabelProps) {
+  const x = Number(props.x ?? 0);
+  const y = Number(props.y ?? 0);
+  const width = Number(props.width ?? 0);
+  const height = Number(props.height ?? 0);
+  const inside = width >= 28;
+  return (
+    <text
+      x={inside ? x + width - 6 : x + width + 6}
+      y={y + height / 2}
+      textAnchor={inside ? "end" : "start"}
+      dominantBaseline="central"
+      className="text-xs font-medium"
+      fill={inside ? "#ffffff" : "var(--color-fg-muted)"}
+    >
+      {props.value}
+    </text>
+  );
+}
+
 /**
  * Horizontal bar comparison — categories on the Y axis (room for long labels),
  * value on the X axis, with the count printed at the end of each bar so it reads
@@ -57,11 +90,7 @@ export function BarComparisonChart({
         />
         <ChartTooltip content={<ChartTooltipContent />} />
         <Bar dataKey="count" fill="var(--color-count)" radius={4}>
-          <LabelList
-            dataKey="count"
-            position="right"
-            className="fill-fg-muted text-xs"
-          />
+          <LabelList dataKey="count" content={renderBarLabel} />
         </Bar>
       </BarChart>
     </ChartContainer>
