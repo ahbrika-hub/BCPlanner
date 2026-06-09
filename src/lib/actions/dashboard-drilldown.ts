@@ -15,12 +15,14 @@ export type DrilldownTask = {
   title: string;
   status: TaskStatus;
   due_date: string | null;
+  estimated_effort_hours: number | null;
 };
 
 export type DrilldownKey =
   | { kind: "status"; status: TaskStatus }
   | { kind: "active" }
-  | { kind: "overdue" };
+  | { kind: "overdue" }
+  | { kind: "assignee-active"; assigneeId: string };
 
 // Mirrors analytics' ACTIVE_STATUSES (the "in-flight" set the dashboard counts).
 const ACTIVE_STATUSES: TaskStatus[] = [
@@ -33,12 +35,21 @@ const ACTIVE_STATUSES: TaskStatus[] = [
   "reopened",
 ];
 
-const slim = (rows: { id: string; title: string; status: TaskStatus; due_date: string | null }[]) =>
+const slim = (
+  rows: {
+    id: string;
+    title: string;
+    status: TaskStatus;
+    due_date: string | null;
+    estimated_effort_hours: number | null;
+  }[],
+) =>
   rows.map((t) => ({
     id: t.id,
     title: t.title,
     status: t.status,
     due_date: t.due_date,
+    estimated_effort_hours: t.estimated_effort_hours,
   }));
 
 export async function fetchDrilldownTasks(
@@ -49,6 +60,15 @@ export async function fetchDrilldownTasks(
   }
   if (key.kind === "active") {
     return slim(await listTasks({ status: ACTIVE_STATUSES }));
+  }
+  if (key.kind === "assignee-active") {
+    // The active tasks behind one employee's workload (RLS-scoped to the viewer).
+    return slim(
+      await listTasks({
+        status: ACTIVE_STATUSES,
+        assignee_id: key.assigneeId,
+      }),
+    );
   }
   return slim(await listTasks({ status: [key.status] }));
 }

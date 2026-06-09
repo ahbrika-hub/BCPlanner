@@ -20,6 +20,7 @@ export type TaskTableRow = {
   title: string;
   status: TaskStatus;
   due_date?: string | null;
+  estimated_effort_hours?: number | null;
 };
 
 /**
@@ -30,11 +31,14 @@ export type TaskTableRow = {
 export function TaskTable({
   rows,
   showDue = false,
+  showHours = false,
   dueTone = "muted",
   onRowNavigate,
 }: {
   rows: TaskTableRow[];
   showDue?: boolean;
+  /** Show an estimated-hours column (used by the workload drill-down). */
+  showHours?: boolean;
   dueTone?: "muted" | "danger";
   /** Fired when a row link is clicked (e.g. to close a containing popup). */
   onRowNavigate?: () => void;
@@ -45,6 +49,7 @@ export function TaskTable({
         <TableHeader>
           <TableRow>
             <TableHead className="bg-card sticky left-0">Task</TableHead>
+            {showHours && <TableHead className="text-right">Hours</TableHead>}
             <TableHead>Status</TableHead>
             {showDue && <TableHead className="text-right">Due</TableHead>}
           </TableRow>
@@ -61,6 +66,11 @@ export function TaskTable({
                   {t.title}
                 </Link>
               </TableCell>
+              {showHours && (
+                <TableCell className="text-fg-muted text-right text-xs tabular-nums whitespace-nowrap">
+                  {t.estimated_effort_hours ?? "—"}
+                </TableCell>
+              )}
               <TableCell>
                 <StatusBadge status={t.status} />
               </TableCell>
