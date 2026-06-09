@@ -68,6 +68,7 @@ export function EvaluationForm({
   };
 
   const onSubmit = (values: FormValues) => {
+    if (pending) return; // guard against double-submit
     startTransition(async () => {
       const res = await createEvaluationAction(values);
       if (res.ok) {

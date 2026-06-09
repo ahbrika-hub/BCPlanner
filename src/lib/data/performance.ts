@@ -150,6 +150,37 @@ export async function getEvaluation(
   return (data as unknown as EvaluationWithEmployee) ?? null;
 }
 
+/**
+ * The existing evaluation for an employee+period, if any (earliest row, so
+ * pre-existing duplicates resolve deterministically). Used to keep saves
+ * idempotent — one evaluation per employee per period.
+ */
+export async function getEvaluationByEmployeePeriod(
+  employeeId: string,
+  period: string,
+): Promise<{ id: string } | null> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("performance_evaluations")
+    .select("id")
+    .eq("employee_id", employeeId)
+    .eq("period", period)
+    .order("created_at", { ascending: true })
+    .limit(1)
+    .maybeSingle();
+  return data ?? null;
+}
+
+/** Delete an evaluation by id (RLS: performance.evaluate AND users.manage). */
+export async function deleteEvaluation(id: string): Promise<void> {
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("performance_evaluations")
+    .delete()
+    .eq("id", id);
+  if (error) throw new Error(error.message);
+}
+
 export async function createEvaluation(
   input: Tables["performance_evaluations"]["Insert"],
 ): Promise<Tables["performance_evaluations"]["Row"]> {
