@@ -9,6 +9,8 @@ import {
   computeEmployeeMetrics,
   createEvaluation,
   updateEvaluation,
+  deleteEvaluation,
+  getEvaluationByEmployeePeriod,
   type ComputedMetrics,
 } from "@/lib/data/performance";
 import type { ActionResult } from "@/lib/actions/tasks";
@@ -59,6 +61,26 @@ export async function createEvaluationAction(
       parsed.data.employee_id,
       parsed.data.period,
     );
+
+    // Idempotent: one evaluation per employee+period. A repeat save (or a
+    // double-submit) updates the existing row in place rather than inserting a
+    // duplicate into Team Performance. (Persistence happens only here, on the
+    // explicit save — computing/previewing metrics never writes.)
+    const existing = await getEvaluationByEmployeePeriod(
+      parsed.data.employee_id,
+      parsed.data.period,
+    );
+    if (existing) {
+      await updateEvaluation(existing.id, {
+        employee_id: parsed.data.employee_id,
+        period: parsed.data.period,
+        evaluation_notes: parsed.data.evaluation_notes ?? null,
+        ...m,
+      });
+      revalidatePath("/performance");
+      return { ok: true, id: existing.id };
+    }
+
     const row = await createEvaluation({
       employee_id: parsed.data.employee_id,
       period: parsed.data.period,
@@ -69,6 +91,23 @@ export async function createEvaluationAction(
 
     revalidatePath("/performance");
     return { ok: true, id: row.id };
+  } catch (e) {
+    return fail(errMessage(e));
+  }
+}
+
+/** Remove an evaluation (admin/section_head). RLS additionally enforces it. */
+export async function deleteEvaluationAction(id: string): Promise<ActionResult> {
+  try {
+    const profile = await getCurrentProfile();
+    if (!profile) return fail("Not authenticated.");
+    const permissions = await getCurrentPermissions();
+    if (!can("performance.evaluate", permissions))
+      return fail("Not authorized.");
+
+    await deleteEvaluation(id);
+    revalidatePath("/performance");
+    return { ok: true, id };
   } catch (e) {
     return fail(errMessage(e));
   }

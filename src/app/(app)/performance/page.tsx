@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/table";
 import { ScoreBreakdown } from "@/components/performance/score-breakdown";
 import { EvaluationForm } from "@/components/performance/evaluation-form";
+import { EvaluationRowActions } from "@/components/performance/evaluation-row-actions";
 
 export default async function PerformancePage() {
   const profile = await getCurrentProfile();
@@ -151,6 +152,9 @@ export default async function PerformancePage() {
                 <TableHead>Completed</TableHead>
                 <TableHead>Delayed</TableHead>
                 <TableHead>Quality</TableHead>
+                {canEvaluate && (
+                  <TableHead className="text-right">Actions</TableHead>
+                )}
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -167,6 +171,15 @@ export default async function PerformancePage() {
                   <TableCell>{e.completed_tasks_count}</TableCell>
                   <TableCell>{e.delayed_tasks_count}</TableCell>
                   <TableCell>{e.quality_avg_rating ?? "—"}</TableCell>
+                  {canEvaluate && (
+                    <TableCell className="text-right">
+                      <EvaluationRowActions
+                        id={e.id}
+                        employeeName={e.employee?.full_name ?? "this employee"}
+                        period={e.period}
+                      />
+                    </TableCell>
+                  )}
                 </TableRow>
               ))}
             </TableBody>
