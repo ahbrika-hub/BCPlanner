@@ -31,8 +31,8 @@ export async function WeeklyDashboardView() {
   if (!snapshot) {
     return (
       <EmptyState
-        title="No dashboard yet"
-        description="Once this week's workbook is uploaded from the Dashboard Update task, it appears here."
+        title="No weekly data yet"
+        description="Upload a workbook on the Dashboard Update task, or load sample data."
       />
     );
   }
