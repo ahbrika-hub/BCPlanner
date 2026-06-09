@@ -32,14 +32,13 @@ const START = Date.UTC(2026, 0, 1); // 2026-01-01
 const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 
 /** Business-line slugs MUST match the logo filenames (public/business-lines/<id>). */
+// Active business lines only (slugs MUST match the logo filenames under
+// public/business-lines/). Trimmed to the three with real assets/data so the
+// dashboard filter shows no empty chips.
 const LINES: { id: string; name: string; accent: string }[] = [
   { id: "merapp", name: "Merapp", accent: "#762651" },
   { id: "artc", name: "ARTC", accent: "#193560" },
   { id: "driving-school", name: "SDS", accent: "#0E7490" },
-  { id: "tss", name: "TSS", accent: "#B45309" },
-  { id: "dealership", name: "Dealership", accent: "#15803D" },
-  { id: "corporate", name: "Corporate", accent: "#6D28D9" },
-  { id: "general", name: "General", accent: "#475569" },
 ];
 
 // ── deterministic PRNG (stable output for the same date) ──────────────────────

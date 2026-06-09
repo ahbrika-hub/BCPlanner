@@ -4,6 +4,7 @@ import {
   Bar,
   BarChart,
   Cell,
+  LabelList,
   Legend,
   Pie,
   PieChart,
@@ -20,6 +21,9 @@ const AXIS = { fontSize: 12, fill: "var(--color-fg-muted)" };
 
 export function WeeklyChart({ chart }: { chart: DashboardChart }) {
   const fmt = (v: number) => fmtValue(v, chart.valueKind);
+  // Value label printed just above each bar (outside-end) — legible on the card
+  // surface regardless of bar colour. Tooltips are kept alongside.
+  const barLabel = (v: unknown) => fmt(Number(v));
 
   if (chart.type === "groupedBar") {
     // Reshape categories × series → one row per category.
@@ -59,7 +63,15 @@ export function WeeklyChart({ chart }: { chart: DashboardChart }) {
               dataKey={s.name}
               fill={s.color}
               radius={[4, 4, 0, 0]}
-            />
+            >
+              <LabelList
+                dataKey={s.name}
+                position="top"
+                formatter={barLabel}
+                fill="var(--color-fg-muted)"
+                fontSize={11}
+              />
+            </Bar>
           ))}
         </BarChart>
       </ResponsiveContainer>
@@ -107,6 +119,13 @@ export function WeeklyChart({ chart }: { chart: DashboardChart }) {
         />
         <Tooltip formatter={(v) => fmt(Number(v))} />
         <Bar dataKey="value" radius={[4, 4, 0, 0]}>
+          <LabelList
+            dataKey="value"
+            position="top"
+            formatter={barLabel}
+            fill="var(--color-fg-muted)"
+            fontSize={11}
+          />
           {chart.segments.map((s) => (
             <Cell key={s.label} fill={s.color} />
           ))}
