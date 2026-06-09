@@ -33,6 +33,7 @@ export function DrilldownDialog({
   description,
   drilldown,
   viewAllHref,
+  showHours = false,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -40,6 +41,8 @@ export function DrilldownDialog({
   description?: string;
   drilldown: DrilldownKey;
   viewAllHref?: string;
+  /** Show an estimated-hours column in the row list (workload drill-down). */
+  showHours?: boolean;
 }) {
   // Rows are tagged with the key they belong to, so a key change derives back to
   // "loading" without a synchronous setState in the effect.
@@ -83,6 +86,7 @@ export function DrilldownDialog({
           <TaskTable
             rows={rows}
             showDue
+            showHours={showHours}
             onRowNavigate={() => onOpenChange(false)}
           />
         )}
