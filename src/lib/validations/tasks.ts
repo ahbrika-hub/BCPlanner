@@ -37,10 +37,15 @@ export const sharepointUrlSchema = z.preprocess(
     .optional(),
 );
 
-export const createTaskSchema = z.object({
+/** Department/project classifier — distinct from the free-text `category` sentinel. */
+export const taskCategorySchema = z.enum(["department", "project"]);
+
+const taskFields = z.object({
   title: z.string().min(3).max(255),
   description: z.string().optional(),
   category: z.string().optional(),
+  task_category: taskCategorySchema.default("department"),
+  project_id: z.uuid().optional(),
   business_line_id: z.uuid().optional(),
   assignee_id: z.uuid().optional(),
   priority: taskPrioritySchema.default("medium"),
@@ -50,14 +55,32 @@ export const createTaskSchema = z.object({
   sharepoint_url: sharepointUrlSchema,
 });
 
-export const updateTaskSchema = createTaskSchema.partial().extend({
-  latest_action: z.string().optional(),
-  next_action: z.string().optional(),
-  challenges_blockers: z.string().optional(),
-  required_support: z.string().optional(),
-  closure_summary: z.string().optional(),
-  quality_rating: z.number().int().min(1).max(5).optional(),
-});
+// A project must be picked iff the task is categorised as a project.
+const projectLinkValid = (d: {
+  task_category?: "department" | "project";
+  project_id?: string;
+}) => d.task_category !== "project" || !!d.project_id;
+const projectLinkRefinement = {
+  message: "Select a project for project-type tasks.",
+  path: ["project_id"],
+};
+
+export const createTaskSchema = taskFields.refine(
+  projectLinkValid,
+  projectLinkRefinement,
+);
+
+export const updateTaskSchema = taskFields
+  .partial()
+  .extend({
+    latest_action: z.string().optional(),
+    next_action: z.string().optional(),
+    challenges_blockers: z.string().optional(),
+    required_support: z.string().optional(),
+    closure_summary: z.string().optional(),
+    quality_rating: z.number().int().min(1).max(5).optional(),
+  })
+  .refine(projectLinkValid, projectLinkRefinement);
 
 export const transitionTaskSchema = z.object({
   status: taskStatusSchema,

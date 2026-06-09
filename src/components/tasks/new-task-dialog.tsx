@@ -37,12 +37,17 @@ type FormValues = z.input<typeof createTaskSchema>;
 export function NewTaskDialog({
   businessLines,
   users,
+  projects,
 }: {
   businessLines: BusinessLineRow[];
   users: AssignableUser[];
+  projects: { id: string; name: string }[];
 }) {
   const [open, setOpen] = useState(false);
   const [pending, startTransition] = useTransition();
+  const [taskCategory, setTaskCategory] = useState<"department" | "project">(
+    "department",
+  );
   const router = useRouter();
 
   const {
@@ -53,8 +58,15 @@ export function NewTaskDialog({
     formState: { errors },
   } = useForm<FormValues>({
     resolver: zodResolver(createTaskSchema),
-    defaultValues: { priority: "medium" },
+    defaultValues: { priority: "medium", task_category: "department" },
   });
+
+  const onTaskCategoryChange = (v: "department" | "project") => {
+    setTaskCategory(v);
+    setValue("task_category", v);
+    // Department tasks never carry a project; clear it when switching away.
+    if (v !== "project") setValue("project_id", undefined);
+  };
 
   const onSubmit = (values: FormValues) => {
     startTransition(async () => {
@@ -65,7 +77,8 @@ export function NewTaskDialog({
       const res = await createTaskAction(cleaned);
       if (res.ok) {
         toast.success("Task created");
-        reset({ priority: "medium" });
+        reset({ priority: "medium", task_category: "department" });
+        setTaskCategory("department");
         setOpen(false);
         router.refresh();
         if (res.id) router.push(`/tasks/${res.id}`);
@@ -128,6 +141,54 @@ export function NewTaskDialog({
                 </SelectContent>
               </Select>
             </div>
+          </div>
+
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label>Task Category</Label>
+              <Select
+                defaultValue="department"
+                onValueChange={(v) =>
+                  onTaskCategoryChange(v as "department" | "project")
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="department">Department</SelectItem>
+                  <SelectItem value="project">Project</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            {taskCategory === "project" && (
+              <div className="space-y-2">
+                <Label>Project</Label>
+                <Select onValueChange={(v) => setValue("project_id", v)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a project…" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {projects.length === 0 ? (
+                      <div className="text-muted-foreground px-2 py-1.5 text-sm">
+                        No active projects
+                      </div>
+                    ) : (
+                      projects.map((p) => (
+                        <SelectItem key={p.id} value={p.id}>
+                          {p.name}
+                        </SelectItem>
+                      ))
+                    )}
+                  </SelectContent>
+                </Select>
+                {errors.project_id && (
+                  <p className="text-destructive text-xs">
+                    {errors.project_id.message}
+                  </p>
+                )}
+              </div>
+            )}
           </div>
 
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">

@@ -118,6 +118,13 @@ export async function TaskDetailContent({ id }: { id: string }) {
           </div>
           <dl className="grid grid-cols-2 gap-4 sm:grid-cols-3">
             <Field label="Category" value={task.category} />
+            <Field
+              label="Type"
+              value={task.task_category === "project" ? "Project" : "Department"}
+            />
+            {task.task_category === "project" && (
+              <Field label="Project" value={task.project?.name} />
+            )}
             <Field label="Business Line" value={task.business_line?.name} />
             <Field
               label="Assignee"

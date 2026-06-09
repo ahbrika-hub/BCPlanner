@@ -23,6 +23,20 @@ export async function listProjects(): Promise<ProjectWithBusinessLine[]> {
   return (data ?? []) as unknown as ProjectWithBusinessLine[];
 }
 
+/** Active projects only, for the task-form project selector (projects.read). */
+export async function listActiveProjects(): Promise<
+  { id: string; name: string }[]
+> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("projects")
+    .select("id, name")
+    .eq("is_active", true)
+    .order("name", { ascending: true });
+  if (error) throw new Error(error.message);
+  return data ?? [];
+}
+
 export async function createProject(
   input: Tables["projects"]["Insert"],
 ): Promise<Tables["projects"]["Row"]> {
