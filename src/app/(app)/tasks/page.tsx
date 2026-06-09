@@ -1,5 +1,6 @@
 import { listTasks } from "@/lib/data/tasks";
 import { listBusinessLines } from "@/lib/data/business-lines";
+import { listActiveProjects } from "@/lib/data/projects";
 import { listAssignableUsers } from "@/lib/data/profiles";
 import { getCurrentProfile, getCurrentPermissions } from "@/lib/auth/session";
 import { can } from "@/lib/permissions";
@@ -21,10 +22,11 @@ export default async function TasksPage({
     typeof sp.priority === "string" ? (sp.priority as TaskPriority) : undefined;
   const search = typeof sp.q === "string" ? sp.q : undefined;
 
-  const [tasks, businessLines, users, profile] = await Promise.all([
+  const [tasks, businessLines, users, projects, profile] = await Promise.all([
     listTasks({ status, priority, search }),
     listBusinessLines(),
     listAssignableUsers(),
+    listActiveProjects(),
     getCurrentProfile(),
   ]);
   const permissions = profile ? await getCurrentPermissions() : [];
@@ -36,7 +38,11 @@ export default async function TasksPage({
         subtitle="Create, track, and manage tasks"
         actions={
           can("tasks.create", permissions) ? (
-            <NewTaskDialog businessLines={businessLines} users={users} />
+            <NewTaskDialog
+              businessLines={businessLines}
+              users={users}
+              projects={projects}
+            />
           ) : null
         }
       />

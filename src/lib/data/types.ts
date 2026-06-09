@@ -17,6 +17,7 @@ export type TaskWithRelations = TaskRow & {
   creator: ProfileRef;
   approver: ProfileRef;
   business_line: BusinessLineRef;
+  project: { id: string; name: string } | null;
 };
 
 export type TaskUpdateWithUser = Tables["task_updates"]["Row"] & {

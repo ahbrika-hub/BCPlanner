@@ -43,8 +43,15 @@ export async function createTaskAction(values: unknown): Promise<ActionResult> {
 
     const status =
       profile.role === "employee" ? "pending_approval" : "assigned";
+    // A project is linked only for project-type tasks (also enforced by the DB
+    // check constraint); never leak a stale project_id onto a department task.
+    const project_id =
+      parsed.data.task_category === "project"
+        ? (parsed.data.project_id ?? null)
+        : null;
     const task = await createTask({
       ...parsed.data,
+      project_id,
       created_by: profile.id,
       status,
     });

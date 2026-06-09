@@ -13,7 +13,8 @@ const TASK_SELECT = `
   assignee:profiles!tasks_assignee_id_fkey(id, full_name),
   creator:profiles!tasks_created_by_fkey(id, full_name),
   approver:profiles!tasks_approved_by_fkey(id, full_name),
-  business_line:business_lines!tasks_business_line_id_fkey(id, name)
+  business_line:business_lines!tasks_business_line_id_fkey(id, name),
+  project:projects!tasks_project_id_fkey(id, name)
 `;
 
 export type TaskFilters = {

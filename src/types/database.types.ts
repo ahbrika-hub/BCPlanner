@@ -826,12 +826,14 @@ export type Database = {
           next_action: string | null
           priority: Database["public"]["Enums"]["task_priority"]
           progress_percentage: number
+          project_id: string | null
           quality_rating: number | null
           reopened_at: string | null
           required_support: string | null
           sharepoint_url: string | null
           start_date: string | null
           status: Database["public"]["Enums"]["task_status"]
+          task_category: string
           task_no: string | null
           title: string
           updated_at: string
@@ -856,12 +858,14 @@ export type Database = {
           next_action?: string | null
           priority?: Database["public"]["Enums"]["task_priority"]
           progress_percentage?: number
+          project_id?: string | null
           quality_rating?: number | null
           reopened_at?: string | null
           required_support?: string | null
           sharepoint_url?: string | null
           start_date?: string | null
           status?: Database["public"]["Enums"]["task_status"]
+          task_category?: string
           task_no?: string | null
           title: string
           updated_at?: string
@@ -886,12 +890,14 @@ export type Database = {
           next_action?: string | null
           priority?: Database["public"]["Enums"]["task_priority"]
           progress_percentage?: number
+          project_id?: string | null
           quality_rating?: number | null
           reopened_at?: string | null
           required_support?: string | null
           sharepoint_url?: string | null
           start_date?: string | null
           status?: Database["public"]["Enums"]["task_status"]
+          task_category?: string
           task_no?: string | null
           title?: string
           updated_at?: string
@@ -930,6 +936,13 @@ export type Database = {
             columns: ["business_line_id"]
             isOneToOne: false
             referencedRelation: "business_lines"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tasks_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
             referencedColumns: ["id"]
           },
           {
