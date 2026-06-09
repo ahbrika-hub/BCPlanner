@@ -31,10 +31,13 @@ export function TaskTable({
   rows,
   showDue = false,
   dueTone = "muted",
+  onRowNavigate,
 }: {
   rows: TaskTableRow[];
   showDue?: boolean;
   dueTone?: "muted" | "danger";
+  /** Fired when a row link is clicked (e.g. to close a containing popup). */
+  onRowNavigate?: () => void;
 }) {
   return (
     <div className="overflow-x-auto">
@@ -52,6 +55,7 @@ export function TaskTable({
               <TableCell className="bg-card sticky left-0 font-medium">
                 <Link
                   href={`/tasks/${t.id}`}
+                  onClick={onRowNavigate}
                   className="hover:text-primary block max-w-[14rem] truncate hover:underline"
                 >
                   {t.title}

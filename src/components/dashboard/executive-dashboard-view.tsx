@@ -9,7 +9,8 @@ import type {
 import type { listEvaluations } from "@/lib/data/performance";
 import { KpiCard } from "@/components/ui/kpi-card";
 import { TokenPill } from "@/components/ui/token-pill";
-import { StatusDistributionChart } from "@/components/charts/status-distribution-chart";
+import { DrilldownKpi } from "@/components/dashboard/drilldown-kpi";
+import { StatusDistributionDrilldown } from "@/components/dashboard/status-distribution-drilldown";
 import { BarComparisonChart } from "@/components/charts/bar-comparison-chart";
 import { TasksOverTimeChart } from "@/components/charts/tasks-over-time-chart";
 import {
@@ -61,18 +62,32 @@ export function ExecutiveDashboardView({
         aria-label="Key metrics"
         className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4"
       >
-        <KpiCard label="Active tasks" value={stats.active} icon={ListTodo} />
-        <KpiCard
+        <DrilldownKpi
+          label="Active tasks"
+          value={stats.active}
+          icon={ListTodo}
+          drilldown={{ kind: "active" }}
+          title="Active tasks"
+          description="Tasks currently in flight."
+        />
+        <DrilldownKpi
           label="Completion rate"
           value={`${stats.completionRate}%`}
           icon={CheckCircle2}
           accent="var(--color-status-completed)"
+          drilldown={{ kind: "status", status: "completed" }}
+          title="Completed tasks"
+          description="Tasks that have been completed."
+          viewAllHref="/tasks?status=completed"
         />
-        <KpiCard
+        <DrilldownKpi
           label="Overdue"
           value={stats.overdue}
           icon={AlertTriangle}
           accent="var(--color-danger)"
+          drilldown={{ kind: "overdue" }}
+          title="Overdue tasks"
+          description="Past due and not yet completed."
         />
         <KpiCard
           label="Avg quality"
@@ -94,7 +109,7 @@ export function ExecutiveDashboardView({
             <CardDescription>Where work sits right now</CardDescription>
           </CardHeader>
           <CardContent>
-            <StatusDistributionChart data={dist} />
+            <StatusDistributionDrilldown data={dist} />
           </CardContent>
         </Card>
         <Card>
