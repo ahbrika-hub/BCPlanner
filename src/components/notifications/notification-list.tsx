@@ -50,8 +50,9 @@ export function NotificationList({ items }: { items: NotificationRow[] }) {
   const open = (n: NotificationRow) => {
     startTransition(async () => {
       if (!n.is_read) await markNotificationReadAction(n.id);
-      // Click-to-open: navigate to the related task (no task-detail modal in
-      // main yet); otherwise just refresh.
+      // Click-to-open: a soft navigation to the related task is intercepted by
+      // the @modal slot and opens the task-detail modal (URL still /tasks/{id}
+      // as a fallback). No related task → graceful refresh, no navigation.
       if (n.task_id) router.push(`/tasks/${n.task_id}`);
       else router.refresh();
     });

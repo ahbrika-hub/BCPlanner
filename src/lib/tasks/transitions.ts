@@ -136,7 +136,9 @@ export const ACTIONS: ActionDescriptor[] = [
     ],
     to: "cancelled",
     requires: "none",
-    variant: "destructive",
+    // Neutral/muted — distinct from Reject (destructive) and Approve (primary)
+    // so the three approval-screen actions read as visually distinct.
+    variant: "outline",
   },
   {
     action: "reopen",
