@@ -67,8 +67,9 @@ export function AppSidebar() {
         <AppNav collapsed={collapsed} />
       </ScrollArea>
 
-      {/* User */}
-      <div className="border-t p-3">
+      {/* User — pinned, never compressed away (shrink-0) so the signed-in
+          name + sign-out stay visible at 100% zoom on 1280/1440. */}
+      <div className="shrink-0 border-t p-3">
         <div
           className={cn(
             "flex items-center gap-3",
@@ -93,7 +94,7 @@ export function AppSidebar() {
               </Badge>
             </div>
           )}
-          <form action={signOut}>
+          <form action={signOut} className="shrink-0">
             <Button
               type="submit"
               variant="ghost"

@@ -11,8 +11,10 @@ import { AppShell } from "@/components/layout/app-shell";
 
 export default async function AppLayout({
   children,
+  modal,
 }: {
   children: React.ReactNode;
+  modal: React.ReactNode;
 }) {
   const user = await getCurrentUser();
   if (!user) {
@@ -33,7 +35,10 @@ export default async function AppLayout({
 
   return (
     <SessionProvider value={{ user, profile, permissions }}>
-      <AppShell unreadCount={unreadCount}>{children}</AppShell>
+      <AppShell unreadCount={unreadCount}>
+        {children}
+        {modal}
+      </AppShell>
     </SessionProvider>
   );
 }
