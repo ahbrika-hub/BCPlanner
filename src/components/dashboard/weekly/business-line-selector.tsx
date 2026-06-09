@@ -14,7 +14,8 @@ export type SelectorLine = {
 
 /**
  * Logo (or branded initials chip) for one business line. Resolution order:
- * explicit logoUrl override → public/business-lines/<id>.svg → .png → chip.
+ * explicit logoUrl override → public/business-lines/<id>.svg → .png → .jpg →
+ * .jpeg → chip.
  * Looks complete with zero logo assets.
  */
 function LineLogo({ line, active }: { line: SelectorLine; active: boolean }) {
@@ -22,6 +23,8 @@ function LineLogo({ line, active }: { line: SelectorLine; active: boolean }) {
     line.logoUrl,
     `/business-lines/${line.id}.svg`,
     `/business-lines/${line.id}.png`,
+    `/business-lines/${line.id}.jpg`,
+    `/business-lines/${line.id}.jpeg`,
   ].filter(Boolean) as string[];
   const [idx, setIdx] = useState(0);
 
