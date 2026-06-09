@@ -1,5 +1,6 @@
 import { getReportData } from "@/lib/data/reports";
 import { listBusinessLines } from "@/lib/data/business-lines";
+import { listAssignableUsers } from "@/lib/data/profiles";
 import { getCurrentProfile, getCurrentPermissions } from "@/lib/auth/session";
 import { can } from "@/lib/permissions";
 import { formatDate } from "@/lib/format";
@@ -47,15 +48,24 @@ export default async function ReportsPage({
   const sp = await searchParams;
   const str = (v: string | string[] | undefined) =>
     typeof v === "string" && v ? v : undefined;
+  // Select filters use "all" as the sentinel for "no filter" (the UI deletes the
+  // param, but a hand-crafted/stale ?key=all must not become an eq("all") that
+  // empties the report).
+  const sel = (v: string | string[] | undefined) => {
+    const s = str(v);
+    return s && s !== "all" ? s : undefined;
+  };
 
-  const [{ tasks, summary }, businessLines] = await Promise.all([
+  const [{ tasks, summary }, businessLines, assignees] = await Promise.all([
     getReportData({
       from: str(sp.from),
       to: str(sp.to),
-      business_line_id: str(sp.business_line),
-      status: str(sp.status) as TaskStatus | undefined,
+      business_line_id: sel(sp.business_line),
+      assignee_id: sel(sp.assignee),
+      status: sel(sp.status) as TaskStatus | undefined,
     }),
     listBusinessLines(),
+    listAssignableUsers(),
   ]);
 
   // aggregates for charts
@@ -98,7 +108,7 @@ export default async function ReportsPage({
         actions={<ExportCsvButton rows={csvRows} />}
       />
 
-      <ReportFilters businessLines={businessLines} />
+      <ReportFilters businessLines={businessLines} assignees={assignees} />
 
       <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <KpiCard label="Tasks" value={summary.count} />
@@ -125,7 +135,7 @@ export default async function ReportsPage({
             <CardTitle>By status</CardTitle>
           </CardHeader>
           <CardContent>
-            <StatusDistributionChart data={dist} />
+            <StatusDistributionChart data={dist} variant="report" />
           </CardContent>
         </Card>
         <Card>
