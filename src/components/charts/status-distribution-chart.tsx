@@ -61,46 +61,74 @@ type PieLabelProps = {
   name?: string | number;
 };
 
-/** In-segment value label; hidden on slices too small to read legibly. */
-function renderSegmentLabel(props: PieLabelProps) {
-  const cx = props.cx ?? 0;
-  const cy = props.cy ?? 0;
-  const midAngle = props.midAngle ?? 0;
-  const innerRadius = props.innerRadius ?? 0;
-  const outerRadius = props.outerRadius ?? 0;
-  const percent = props.percent ?? 0;
-  const value = props.value ?? 0;
-  if (percent < 0.04) return null; // too small to fit a legible label
-  const r = innerRadius + (outerRadius - innerRadius) * 0.5;
-  const x = cx + r * Math.cos(-midAngle * RAD);
-  const y = cy + r * Math.sin(-midAngle * RAD);
-  return (
-    <text
-      x={x}
-      y={y}
-      fill={labelFill(String(props.name ?? ""))}
-      textAnchor="middle"
-      dominantBaseline="central"
-      className="text-[11px] font-semibold"
-      style={{ pointerEvents: "none" }}
-    >
-      {value}
-      {percent >= 0.1 ? ` · ${Math.round(percent * 100)}%` : ""}
-    </text>
-  );
+/**
+ * Builds an in-segment value-label renderer. `fontSizePx` pins a constant font
+ * size (used by the report variant so labels don't appear to rescale); when
+ * omitted the label keeps the dashboard's original `text-[11px]` class so the
+ * dashboard donut renders exactly as before. Slices too small are skipped.
+ */
+function makeSegmentLabel(fontSizePx?: number) {
+  return function SegmentLabel(props: PieLabelProps) {
+    const cx = props.cx ?? 0;
+    const cy = props.cy ?? 0;
+    const midAngle = props.midAngle ?? 0;
+    const innerRadius = props.innerRadius ?? 0;
+    const outerRadius = props.outerRadius ?? 0;
+    const percent = props.percent ?? 0;
+    const value = props.value ?? 0;
+    if (percent < 0.04) return null; // too small to fit a legible label
+    const r = innerRadius + (outerRadius - innerRadius) * 0.5;
+    const x = cx + r * Math.cos(-midAngle * RAD);
+    const y = cy + r * Math.sin(-midAngle * RAD);
+    return (
+      <text
+        x={x}
+        y={y}
+        fill={labelFill(String(props.name ?? ""))}
+        textAnchor="middle"
+        dominantBaseline="central"
+        className={fontSizePx ? "font-semibold" : "text-[11px] font-semibold"}
+        fontSize={fontSizePx}
+        style={{ pointerEvents: "none" }}
+      >
+        {value}
+        {percent >= 0.1 ? ` · ${Math.round(percent * 100)}%` : ""}
+      </text>
+    );
+  };
 }
+
+// Dashboard donut keeps its original 11px label; the report variant uses a
+// smaller, explicitly-fixed 10px label.
+const defaultSegmentLabel = makeSegmentLabel();
+const reportSegmentLabel = makeSegmentLabel(10);
 
 export function StatusDistributionChart({
   data,
   onSegmentClick,
+  variant = "donut",
 }: {
   data: StatusDatum[];
   /** Optional drill-down: fires with the clicked segment's status. */
   onSegmentClick?: (status: string) => void;
+  /**
+   * "donut" (default) — the dashboard appearance (auto-fit radius, 11px label).
+   * "report" — a thicker arc with FIXED inner/outer radius so the band and label
+   * positions don't change when filters change the status count, and a constant
+   * 10px label. Scopes the Reports tweaks without altering the dashboard.
+   */
+  variant?: "donut" | "report";
 }) {
   if (data.length === 0) {
     return <EmptyState title="No data" description="No tasks to chart yet." />;
   }
+
+  const isReport = variant === "report";
+  // Report: both radii fixed → constant band thickness + stable label radius
+  // across filter changes. Dashboard: original auto-fit outerRadius (unchanged).
+  const innerRadius = isReport ? 62 : 55;
+  const outerRadius = isReport ? 98 : undefined;
+  const segmentLabel = isReport ? reportSegmentLabel : defaultSegmentLabel;
 
   const config: ChartConfig = Object.fromEntries(
     data.map((d) => [
@@ -123,9 +151,10 @@ export function StatusDistributionChart({
           data={data}
           dataKey="count"
           nameKey="status"
-          innerRadius={55}
+          innerRadius={innerRadius}
+          outerRadius={outerRadius}
           strokeWidth={2}
-          label={renderSegmentLabel}
+          label={segmentLabel}
           labelLine={false}
           onClick={
             onSegmentClick

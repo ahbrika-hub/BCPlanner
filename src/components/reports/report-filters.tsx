@@ -3,7 +3,7 @@
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { X } from "lucide-react";
 
-import type { BusinessLineRow } from "@/lib/data/types";
+import type { BusinessLineRow, AssignableUser } from "@/lib/data/types";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -32,8 +32,10 @@ const STATUSES = [
 
 export function ReportFilters({
   businessLines,
+  assignees,
 }: {
   businessLines: BusinessLineRow[];
+  assignees: AssignableUser[];
 }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -46,8 +48,8 @@ export function ReportFilters({
     router.push(`${pathname}?${next.toString()}`);
   };
 
-  const hasFilters = ["from", "to", "business_line", "status"].some((k) =>
-    params.get(k),
+  const hasFilters = ["from", "to", "business_line", "assignee", "status"].some(
+    (k) => params.get(k),
   );
 
   return (
@@ -90,6 +92,25 @@ export function ReportFilters({
             {businessLines.map((bl) => (
               <SelectItem key={bl.id} value={bl.id}>
                 {bl.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+      <div className="space-y-1">
+        <Label className="text-xs">Assignee</Label>
+        <Select
+          value={params.get("assignee") ?? "all"}
+          onValueChange={(v) => setParam("assignee", v)}
+        >
+          <SelectTrigger className="w-44">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All assignees</SelectItem>
+            {assignees.map((u) => (
+              <SelectItem key={u.id} value={u.id}>
+                {u.full_name || u.email}
               </SelectItem>
             ))}
           </SelectContent>
