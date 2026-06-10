@@ -8,7 +8,7 @@ import { userRoleSchema } from "./users";
  * client/server-action layer of the same policy (app_settings is not readable by
  * the anonymous signup context).
  */
-export const ALLOWED_SIGNUP_DOMAINS = ["saptco.com"] as const;
+export const ALLOWED_SIGNUP_DOMAINS = ["saptco.com", "tss.test"] as const;
 
 export function isAllowedSignupDomain(email: string): boolean {
   const domain = email.trim().toLowerCase().split("@")[1] ?? "";

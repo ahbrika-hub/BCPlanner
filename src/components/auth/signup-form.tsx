@@ -8,7 +8,11 @@ import { CheckCircle2, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { signUp } from "@/lib/auth/actions";
-import { signupSchema, type SignupInput } from "@/lib/validations/auth";
+import {
+  signupSchema,
+  ALLOWED_SIGNUP_DOMAINS,
+  type SignupInput,
+} from "@/lib/validations/auth";
 import { TssLogo } from "@/components/brand/tss-logo";
 import { Button } from "@/components/ui/button";
 import {
@@ -79,7 +83,11 @@ export function SignupForm() {
           Create your account
         </CardTitle>
         <CardDescription>
-          Registration is limited to <strong>@saptco.com</strong> addresses.
+          Registration is limited to{" "}
+          <strong>
+            {ALLOWED_SIGNUP_DOMAINS.map((d) => `@${d}`).join(" or ")}
+          </strong>{" "}
+          addresses.
         </CardDescription>
       </CardHeader>
       <CardContent>
