@@ -38,6 +38,29 @@ export const signupSchema = z
 
 export type SignupInput = z.infer<typeof signupSchema>;
 
+/** Request a password-reset email. Any existing-account domain is allowed. */
+export const forgotPasswordSchema = z.object({
+  email: z.email("Enter a valid email address").trim().toLowerCase(),
+});
+
+export type ForgotPasswordInput = z.infer<typeof forgotPasswordSchema>;
+
+/** Set a new password during a recovery session. */
+export const updatePasswordSchema = z
+  .object({
+    password: z
+      .string()
+      .min(8, "Password must be at least 8 characters")
+      .max(72, "Password must be at most 72 characters"),
+    confirm: z.string(),
+  })
+  .refine((d) => d.password === d.confirm, {
+    message: "Passwords do not match",
+    path: ["confirm"],
+  });
+
+export type UpdatePasswordInput = z.infer<typeof updatePasswordSchema>;
+
 /** Approving a pending registration: activate + assign role/department. */
 export const approveSignupSchema = z.object({
   role: userRoleSchema,
