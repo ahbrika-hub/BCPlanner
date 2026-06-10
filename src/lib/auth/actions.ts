@@ -8,8 +8,21 @@ import {
   signupSchema,
   isAllowedSignupDomain,
   ALLOWED_SIGNUP_DOMAINS,
+  forgotPasswordSchema,
+  updatePasswordSchema,
   type SignupInput,
+  type ForgotPasswordInput,
+  type UpdatePasswordInput,
 } from "@/lib/validations/auth";
+
+/** Absolute origin of the current request, for building email redirect links. */
+async function requestOrigin(): Promise<string> {
+  const hdrs = await headers();
+  return (
+    hdrs.get("origin") ??
+    (hdrs.get("host") ? `https://${hdrs.get("host")}` : "")
+  );
+}
 
 export type SignInState = { error?: string };
 
@@ -97,6 +110,80 @@ export async function signUp(input: SignupInput): Promise<SignUpResult> {
   }
 
   return { ok: true, status: "confirm" };
+}
+
+export type ForgotPasswordResult =
+  | { ok: true }
+  | { ok: false; message: string };
+
+/**
+ * Request a password-reset email. ALWAYS returns a neutral success — we never
+ * reveal whether an account exists (no enumeration). The email link lands on
+ * /auth/confirm, which verifies the token and forwards to /update-password.
+ */
+export async function requestPasswordReset(
+  input: ForgotPasswordInput,
+): Promise<ForgotPasswordResult> {
+  const parsed = forgotPasswordSchema.safeParse(input);
+  if (!parsed.success) {
+    return {
+      ok: false,
+      message: parsed.error.issues[0]?.message ?? "Enter a valid email.",
+    };
+  }
+  const origin = await requestOrigin();
+  const supabase = await createClient();
+  // Errors (incl. unknown email / rate limits) are intentionally swallowed so
+  // the response is identical whether or not an account exists.
+  await supabase.auth.resetPasswordForEmail(parsed.data.email, {
+    redirectTo: origin
+      ? `${origin}/auth/confirm?next=/update-password`
+      : undefined,
+  });
+  return { ok: true };
+}
+
+export type UpdatePasswordResult =
+  | { ok: true }
+  | { ok: false; status: "session" | "invalid" | "error"; message: string };
+
+/**
+ * Set a new password. Requires an active recovery session (established by
+ * /auth/confirm's verifyOtp). On a missing/expired session, returns
+ * status:"session" so the UI can route back to /forgot-password.
+ */
+export async function updatePassword(
+  input: UpdatePasswordInput,
+): Promise<UpdatePasswordResult> {
+  const parsed = updatePasswordSchema.safeParse(input);
+  if (!parsed.success) {
+    return {
+      ok: false,
+      status: "invalid",
+      message: parsed.error.issues[0]?.message ?? "Invalid password.",
+    };
+  }
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
+    return {
+      ok: false,
+      status: "session",
+      message:
+        "Your reset link has expired or is invalid. Please request a new one.",
+    };
+  }
+
+  const { error } = await supabase.auth.updateUser({
+    password: parsed.data.password,
+  });
+  if (error) {
+    return { ok: false, status: "error", message: error.message };
+  }
+  return { ok: true };
 }
 
 /** Sign out and return to the login page. */
