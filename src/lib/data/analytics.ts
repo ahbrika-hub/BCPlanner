@@ -1,7 +1,12 @@
 import "server-only";
 
 import { createClient } from "@/lib/supabase/server";
-import type { TaskWithRelations } from "./types";
+import {
+  isOverdue,
+  todayDateString,
+  OVERDUE_EXCLUDED_STATUSES,
+} from "@/lib/tasks/overdue";
+import type { TaskWithRelations, TaskStatus } from "./types";
 
 const ACTIVE_STATUSES = [
   "assigned",
@@ -26,18 +31,6 @@ export type DashboardStats = {
   byPriority: Record<string, number>;
 };
 
-function isOverdue(
-  r: { status: string; due_date: string | null },
-  now: number,
-) {
-  return (
-    r.status !== "completed" &&
-    r.status !== "cancelled" &&
-    !!r.due_date &&
-    new Date(r.due_date).getTime() < now
-  );
-}
-
 export async function getDashboardStats(
   opts: {
     assigneeId?: string;
@@ -50,7 +43,6 @@ export async function getDashboardStats(
   if (opts.assigneeId) q = q.eq("assignee_id", opts.assigneeId);
   const { data } = await q;
   const rows = data ?? [];
-  const now = Date.now();
 
   const byStatus: Record<string, number> = {};
   const byPriority: Record<string, number> = {};
@@ -74,7 +66,10 @@ export async function getDashboardStats(
     active: rows.filter((r) => ACTIVE_STATUSES.includes(r.status)).length,
     completed,
     completionRate: total > 0 ? Math.round((completed / total) * 100) : 0,
-    overdue: rows.filter((r) => isOverdue(r, now)).length,
+    // Canonical overdue definition (see @/lib/tasks/overdue): the single source
+    // of truth shared with the /tasks overdue filter and the delayed report.
+    overdue: rows.filter((r) => isOverdue(r.due_date, r.status as TaskStatus))
+      .length,
     pendingApprovals: byStatus["pending_approval"] ?? 0,
     pendingReview: byStatus["pending_review"] ?? 0,
     avgQuality,
@@ -170,12 +165,16 @@ export async function getOverdueTasks(
   limit = 10,
 ): Promise<TaskWithRelations[]> {
   const supabase = await createClient();
-  const today = new Date().toISOString().slice(0, 10);
+  // Canonical overdue conditions, mirrored from @/lib/tasks/overdue and the
+  // /tasks overdue filter: a non-null past due date and a non-terminal status
+  // (terminal = completed/cancelled/rejected). Keeps the dashboard widget, its
+  // drill-down, and the delayed report on one definition.
   const { data } = await supabase
     .from("tasks")
     .select(OVERVIEW_SELECT)
-    .lt("due_date", today)
-    .not("status", "in", "(completed,cancelled)")
+    .not("due_date", "is", null)
+    .lt("due_date", todayDateString())
+    .not("status", "in", `(${OVERDUE_EXCLUDED_STATUSES.join(",")})`)
     .order("due_date", { ascending: true })
     .limit(limit);
   return (data ?? []) as unknown as TaskWithRelations[];
