@@ -54,6 +54,19 @@ export async function isActiveProject(id: string): Promise<boolean> {
   return data !== null;
 }
 
+/** A single project with its business line, or null when not visible/found. */
+export async function getProject(
+  id: string,
+): Promise<ProjectWithBusinessLine | null> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("projects")
+    .select(SELECT)
+    .eq("id", id)
+    .maybeSingle();
+  return (data as unknown as ProjectWithBusinessLine) ?? null;
+}
+
 export async function createProject(
   input: Tables["projects"]["Insert"],
 ): Promise<Tables["projects"]["Row"]> {
