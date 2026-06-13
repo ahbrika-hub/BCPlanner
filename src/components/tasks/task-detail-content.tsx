@@ -5,6 +5,7 @@ import { getTask } from "@/lib/data/tasks";
 import { listUpdates } from "@/lib/data/task-updates";
 import { listComments } from "@/lib/data/comments";
 import { listAttachments } from "@/lib/data/attachments";
+import { getTaskTimeline } from "@/lib/data/timeline";
 import { listAssignableUsers } from "@/lib/data/profiles";
 import { listBusinessLines } from "@/lib/data/business-lines";
 import { listActiveProjects } from "@/lib/data/projects";
@@ -33,6 +34,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TaskActionBar } from "@/components/tasks/task-action-bar";
+import { TaskTimeline } from "@/components/tasks/task-timeline";
 import { EditTaskDialog } from "@/components/tasks/edit-task-dialog";
 import { CommentsSection } from "@/components/tasks/comments-section";
 import { AttachmentsSection } from "@/components/tasks/attachments-section";
@@ -62,6 +64,7 @@ export async function TaskDetailContent({ id }: { id: string }) {
     users,
     businessLines,
     projects,
+    timeline,
     profile,
   ] = await Promise.all([
     listUpdates(id),
@@ -70,6 +73,7 @@ export async function TaskDetailContent({ id }: { id: string }) {
     listAssignableUsers(),
     listBusinessLines(),
     listActiveProjects(),
+    getTaskTimeline(id),
     getCurrentProfile(),
   ]);
   if (!profile) notFound();
@@ -209,8 +213,9 @@ export async function TaskDetailContent({ id }: { id: string }) {
         </CardContent>
       </Card>
 
-      <Tabs defaultValue="updates">
+      <Tabs defaultValue="activity">
         <TabsList>
+          <TabsTrigger value="activity">Activity</TabsTrigger>
           <TabsTrigger value="updates">Updates ({updates.length})</TabsTrigger>
           <TabsTrigger value="comments">
             Comments ({comments.length})
@@ -219,6 +224,14 @@ export async function TaskDetailContent({ id }: { id: string }) {
             Attachments ({attachments.length})
           </TabsTrigger>
         </TabsList>
+
+        <TabsContent value="activity" className="pt-4">
+          <TaskTimeline
+            taskId={task.id}
+            initialEntries={timeline.entries}
+            initialCursor={timeline.nextCursor}
+          />
+        </TabsContent>
 
         <TabsContent value="updates" className="pt-4">
           {updates.length === 0 ? (
