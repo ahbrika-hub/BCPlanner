@@ -37,6 +37,23 @@ export async function listActiveProjects(): Promise<
   return data ?? [];
 }
 
+/**
+ * True iff the project exists and is active. Used server-side when an edit
+ * re-points a task at a project — a project can be deactivated after the task
+ * was created, so the edit path verifies the target is still active rather than
+ * trusting the client-supplied id.
+ */
+export async function isActiveProject(id: string): Promise<boolean> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("projects")
+    .select("id")
+    .eq("id", id)
+    .eq("is_active", true)
+    .maybeSingle();
+  return data !== null;
+}
+
 export async function createProject(
   input: Tables["projects"]["Insert"],
 ): Promise<Tables["projects"]["Row"]> {

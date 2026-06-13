@@ -6,7 +6,10 @@ import { listUpdates } from "@/lib/data/task-updates";
 import { listComments } from "@/lib/data/comments";
 import { listAttachments } from "@/lib/data/attachments";
 import { listAssignableUsers } from "@/lib/data/profiles";
+import { listBusinessLines } from "@/lib/data/business-lines";
+import { listActiveProjects } from "@/lib/data/projects";
 import { getCurrentProfile, getCurrentPermissions } from "@/lib/auth/session";
+import { can } from "@/lib/permissions";
 import {
   formatDate,
   formatDateTime,
@@ -30,6 +33,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TaskActionBar } from "@/components/tasks/task-action-bar";
+import { EditTaskDialog } from "@/components/tasks/edit-task-dialog";
 import { CommentsSection } from "@/components/tasks/comments-section";
 import { AttachmentsSection } from "@/components/tasks/attachments-section";
 
@@ -51,15 +55,34 @@ export async function TaskDetailContent({ id }: { id: string }) {
   const task = await getTask(id);
   if (!task) notFound();
 
-  const [updates, comments, attachments, users, profile] = await Promise.all([
+  const [
+    updates,
+    comments,
+    attachments,
+    users,
+    businessLines,
+    projects,
+    profile,
+  ] = await Promise.all([
     listUpdates(id),
     listComments(id),
     listAttachments(id),
     listAssignableUsers(),
+    listBusinessLines(),
+    listActiveProjects(),
     getCurrentProfile(),
   ]);
   if (!profile) notFound();
   const permissions = await getCurrentPermissions();
+
+  // Mirrors updateTaskAction + the tasks_update RLS policy: creator, current
+  // assignee, or a manager (tasks.read_all), gated by tasks.update. The action
+  // re-checks this server-side, so the affordance is a convenience only.
+  const canEdit =
+    can("tasks.update", permissions) &&
+    (task.created_by === profile.id ||
+      task.assignee_id === profile.id ||
+      can("tasks.read_all", permissions));
 
   return (
     <>
@@ -82,13 +105,33 @@ export async function TaskDetailContent({ id }: { id: string }) {
           </Breadcrumb>
         }
         actions={
-          <TaskActionBar
-            taskId={task.id}
-            status={task.status}
-            role={profile.role}
-            permissions={permissions}
-            users={users}
-          />
+          <div className="flex flex-wrap items-center gap-2">
+            {canEdit && (
+              <EditTaskDialog
+                task={{
+                  id: task.id,
+                  title: task.title,
+                  description: task.description,
+                  priority: task.priority,
+                  due_date: task.due_date,
+                  business_line_id: task.business_line_id,
+                  sharepoint_url: task.sharepoint_url,
+                  task_category:
+                    task.task_category === "project" ? "project" : "department",
+                  project_id: task.project_id,
+                }}
+                businessLines={businessLines}
+                projects={projects}
+              />
+            )}
+            <TaskActionBar
+              taskId={task.id}
+              status={task.status}
+              role={profile.role}
+              permissions={permissions}
+              users={users}
+            />
+          </div>
         }
       />
 

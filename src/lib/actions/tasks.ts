@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 
-import { createTaskSchema, updateTaskSchema } from "@/lib/validations";
+import { createTaskSchema } from "@/lib/validations";
 import { getCurrentProfile, getCurrentPermissions } from "@/lib/auth/session";
 import { can } from "@/lib/permissions";
 import { createClient } from "@/lib/supabase/server";
@@ -12,6 +12,7 @@ import {
   getTask,
   transitionTask,
 } from "@/lib/data/tasks";
+import { isActiveProject } from "@/lib/data/projects";
 import { addComment } from "@/lib/data/comments";
 import { ACTION_BY_NAME, type TaskAction } from "@/lib/tasks/transitions";
 import { emailRole, emailUsers } from "@/lib/email/events";
@@ -80,11 +81,20 @@ export async function createTaskAction(values: unknown): Promise<ActionResult> {
   }
 }
 
+/**
+ * Edit the descriptive metadata of an existing task. Reuses the create
+ * validation (`createTaskSchema`) verbatim — same https-only SharePoint rule and
+ * same task_category/project consistency refinement — then writes a strict
+ * allowlist of descriptive columns. Status and assignee are intentionally NOT
+ * writable here (they flow through the transition and assign guards), and the
+ * create-only fields (free-text category, start date, effort hours) are left
+ * untouched. Eligibility mirrors the tasks_update RLS policy exactly.
+ */
 export async function updateTaskAction(
   id: string,
   values: unknown,
 ): Promise<ActionResult> {
-  const parsed = updateTaskSchema.safeParse(values);
+  const parsed = createTaskSchema.safeParse(values);
   if (!parsed.success) {
     return fail(parsed.error.issues[0]?.message ?? "Invalid input.");
   }
@@ -92,9 +102,45 @@ export async function updateTaskAction(
     const profile = await getCurrentProfile();
     if (!profile) return fail("Not authenticated.");
     const permissions = await getCurrentPermissions();
+    // ceo holds tasks.read_all but not tasks.update, so this gate blocks it.
     if (!can("tasks.update", permissions)) return fail("Not authorized.");
 
-    await updateTask(id, parsed.data as Tables["tasks"]["Update"]);
+    const existing = await getTask(id);
+    if (!existing) return fail("Task not found.");
+
+    // Mirrors tasks_update RLS: creator, current assignee, or a manager
+    // (tasks.read_all = admin / section_head). An unrelated employee — who has
+    // tasks.update but is neither — is refused here, not just by RLS.
+    const eligible =
+      existing.created_by === profile.id ||
+      existing.assignee_id === profile.id ||
+      can("tasks.read_all", permissions);
+    if (!eligible) return fail("You are not allowed to edit this task.");
+
+    const d = parsed.data;
+    // A project is linked only for project-type tasks; switching to department
+    // clears any stale project_id (also guarded by the DB check constraint).
+    const project_id =
+      d.task_category === "project" ? (d.project_id ?? null) : null;
+
+    // A project can be deactivated after the task was created — never re-point
+    // an edit at an inactive project. (Edit-only; create relies on its picker.)
+    if (project_id && !(await isActiveProject(project_id))) {
+      return fail("Select an active project.");
+    }
+
+    const patch: Tables["tasks"]["Update"] = {
+      title: d.title,
+      description: d.description ?? null,
+      priority: d.priority,
+      due_date: d.due_date ?? null,
+      business_line_id: d.business_line_id ?? null,
+      sharepoint_url: d.sharepoint_url ?? null,
+      task_category: d.task_category,
+      project_id,
+    };
+
+    await updateTask(id, patch);
     revalidatePath(`/tasks/${id}`);
     revalidatePath("/tasks");
     return { ok: true, id };

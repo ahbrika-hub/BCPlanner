@@ -4,12 +4,12 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Plus, Loader2 } from "lucide-react";
+import { Pencil, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { createTaskSchema } from "@/lib/validations";
-import { createTaskAction } from "@/lib/actions/tasks";
-import type { BusinessLineRow, AssignableUser } from "@/lib/data/types";
+import { updateTaskAction } from "@/lib/actions/tasks";
+import type { BusinessLineRow } from "@/lib/data/types";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -25,23 +25,48 @@ import {
   type TaskFormValues,
 } from "@/components/tasks/task-form-fields";
 
-type FormValues = TaskFormValues;
+/** Current descriptive values used to pre-populate the edit form. */
+export type EditableTask = {
+  id: string;
+  title: string;
+  description: string | null;
+  priority: "low" | "medium" | "high" | "critical";
+  due_date: string | null;
+  business_line_id: string | null;
+  sharepoint_url: string | null;
+  task_category: "department" | "project";
+  project_id: string | null;
+};
 
-export function NewTaskDialog({
+/**
+ * Edit affordance shown in the task detail/modal to eligible roles. Reuses the
+ * create form (via TaskFormFields, mode="edit") pre-populated with the task's
+ * current values. Eligibility is enforced server-side in updateTaskAction
+ * regardless of whether this button is rendered.
+ */
+export function EditTaskDialog({
+  task,
   businessLines,
-  users,
   projects,
 }: {
+  task: EditableTask;
   businessLines: BusinessLineRow[];
-  users: AssignableUser[];
   projects: { id: string; name: string }[];
 }) {
   const [open, setOpen] = useState(false);
   const [pending, startTransition] = useTransition();
-  // Bumped on a successful create to remount TaskFormFields, resetting its
-  // internal task-category state alongside the react-hook-form reset().
-  const [formKey, setFormKey] = useState(0);
   const router = useRouter();
+
+  const defaults: Partial<TaskFormValues> = {
+    title: task.title,
+    description: task.description ?? undefined,
+    priority: task.priority,
+    due_date: task.due_date ?? undefined,
+    business_line_id: task.business_line_id ?? undefined,
+    sharepoint_url: task.sharepoint_url ?? undefined,
+    task_category: task.task_category,
+    project_id: task.project_id ?? undefined,
+  };
 
   const {
     register,
@@ -49,25 +74,28 @@ export function NewTaskDialog({
     reset,
     setValue,
     formState: { errors },
-  } = useForm<FormValues>({
+  } = useForm<TaskFormValues>({
     resolver: zodResolver(createTaskSchema),
-    defaultValues: { priority: "medium", task_category: "department" },
+    defaultValues: defaults,
   });
 
-  const onSubmit = (values: FormValues) => {
+  const onOpenChange = (next: boolean) => {
+    // Re-seed the form from the task's current values each time it opens.
+    if (next) reset(defaults);
+    setOpen(next);
+  };
+
+  const onSubmit = (values: TaskFormValues) => {
     startTransition(async () => {
       // strip empty strings so optional fields stay undefined
       const cleaned = Object.fromEntries(
         Object.entries(values).filter(([, v]) => v !== "" && v !== undefined),
       );
-      const res = await createTaskAction(cleaned);
+      const res = await updateTaskAction(task.id, cleaned);
       if (res.ok) {
-        toast.success("Task created");
-        reset({ priority: "medium", task_category: "department" });
-        setFormKey((k) => k + 1);
+        toast.success("Task updated");
         setOpen(false);
         router.refresh();
-        if (res.id) router.push(`/tasks/${res.id}`);
       } else {
         toast.error(res.error);
       }
@@ -75,36 +103,37 @@ export function NewTaskDialog({
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogTrigger asChild>
-        <Button>
-          <Plus className="size-4" />
-          New Task
+        <Button variant="outline" size="sm">
+          <Pencil className="size-4" />
+          Edit
         </Button>
       </DialogTrigger>
       <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>New Task</DialogTitle>
+          <DialogTitle>Edit Task</DialogTitle>
           <DialogDescription>
-            Create a task. Employee-created tasks go to approval first.
+            Update the task&rsquo;s descriptive details. Status and assignee
+            changes use their own actions.
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <TaskFormFields
-            key={formKey}
-            mode="create"
+            key={open ? "open" : "closed"}
+            mode="edit"
             register={register}
             setValue={setValue}
             errors={errors}
             businessLines={businessLines}
-            users={users}
             projects={projects}
+            defaults={defaults}
           />
 
           <DialogFooter>
             <Button type="submit" disabled={pending}>
               {pending && <Loader2 className="size-4 animate-spin" />}
-              Create Task
+              Save Changes
             </Button>
           </DialogFooter>
         </form>
