@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Plus, Loader2 } from "lucide-react";
@@ -177,7 +178,14 @@ export function ProjectsManager({
             <TableBody>
               {rows.map((p) => (
                 <TableRow key={p.id}>
-                  <TableCell className="font-medium">{p.name}</TableCell>
+                  <TableCell className="font-medium">
+                    <Link
+                      href={`/projects/${p.id}`}
+                      className="hover:underline"
+                    >
+                      {p.name}
+                    </Link>
+                  </TableCell>
                   <TableCell className="text-muted-foreground text-sm">
                     {p.business_line?.name ?? "—"}
                   </TableCell>

@@ -170,7 +170,22 @@ export async function TaskDetailContent({ id }: { id: string }) {
               value={task.task_category === "project" ? "Project" : "Department"}
             />
             {task.task_category === "project" && (
-              <Field label="Project" value={task.project?.name} />
+              <Field
+                label="Project"
+                value={
+                  task.project &&
+                  can("tasks.read_all", permissions) ? (
+                    <Link
+                      href={`/projects/${task.project.id}`}
+                      className="text-primary hover:underline"
+                    >
+                      {task.project.name}
+                    </Link>
+                  ) : (
+                    task.project?.name
+                  )
+                }
+              />
             )}
             <Field label="Business Line" value={task.business_line?.name} />
             <Field
