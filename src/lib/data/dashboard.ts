@@ -1,6 +1,7 @@
 import "server-only";
 
 import { createClient } from "@/lib/supabase/server";
+import { DASHBOARD_UPLOAD_CATEGORY } from "@/lib/dashboard/constants";
 import {
   dashboardDataSchema,
   type DashboardData,
@@ -34,6 +35,24 @@ export async function getLatestSnapshot(): Promise<WeeklySnapshot> {
     createdAt: row.created_at,
     data: parsed.data,
   };
+}
+
+/**
+ * True when a Dashboard Update task is currently open (not completed/cancelled/
+ * rejected). Drives the "Update in progress" button state. RLS-scoped, but the
+ * request-update roles (admin/section_head/ceo) all hold tasks.read_all, so they
+ * see the open task; the definer function is the authoritative de-dup.
+ */
+export async function hasOpenDashboardUpdate(): Promise<boolean> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("tasks")
+    .select("id")
+    .eq("category", DASHBOARD_UPLOAD_CATEGORY)
+    .not("status", "in", "(completed,cancelled,rejected)")
+    .limit(1)
+    .maybeSingle();
+  return data !== null;
 }
 
 /** Optional per-business-line logo overrides, keyed by business-line name. */

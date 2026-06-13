@@ -1063,6 +1063,7 @@ export type Database = {
         }[]
       }
       get_my_permissions: { Args: never; Returns: string[] }
+      request_dashboard_update: { Args: { p_assignee?: string }; Returns: Json }
       notify_role: {
         Args: {
           p_message: string
