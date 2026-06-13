@@ -465,6 +465,63 @@ export type Database = {
           },
         ]
       }
+      task_templates: {
+        Row: {
+          business_line_id: string | null
+          created_at: string
+          created_by: string | null
+          description: string | null
+          estimated_effort_hours: number | null
+          id: string
+          is_active: boolean
+          name: string
+          priority: Database["public"]["Enums"]["task_priority"] | null
+          title: string | null
+          updated_at: string
+        }
+        Insert: {
+          business_line_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          estimated_effort_hours?: number | null
+          id?: string
+          is_active?: boolean
+          name: string
+          priority?: Database["public"]["Enums"]["task_priority"] | null
+          title?: string | null
+          updated_at?: string
+        }
+        Update: {
+          business_line_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          estimated_effort_hours?: number | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          priority?: Database["public"]["Enums"]["task_priority"] | null
+          title?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_templates_business_line_id_fkey"
+            columns: ["business_line_id"]
+            isOneToOne: false
+            referencedRelation: "business_lines"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "task_templates_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       recurring_tasks: {
         Row: {
           assignee_id: string | null
