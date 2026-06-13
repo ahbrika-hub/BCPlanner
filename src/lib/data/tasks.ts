@@ -1,6 +1,7 @@
 import "server-only";
 
 import { createClient } from "@/lib/supabase/server";
+import { OVERDUE_EXCLUDED_STATUSES, todayDateString } from "@/lib/tasks/overdue";
 import type {
   Tables,
   TaskWithRelations,
@@ -23,6 +24,8 @@ export type TaskFilters = {
   assignee_id?: string;
   business_line_id?: string;
   search?: string;
+  /** Derived overdue filter — see @/lib/tasks/overdue for the canonical rule. */
+  overdue?: boolean;
 };
 
 export async function listTasks(
@@ -41,10 +44,32 @@ export async function listTasks(
   if (filters.assignee_id) query = query.eq("assignee_id", filters.assignee_id);
   if (filters.business_line_id)
     query = query.eq("business_line_id", filters.business_line_id);
+
   if (filters.search) {
-    query = query.or(
-      `title.ilike.%${filters.search}%,task_no.ilike.%${filters.search}%`,
-    );
+    // FTS over title+task_no+description (search_vector, 'simple' config) OR a
+    // trigram substring match on the hyphenated task number. Strip PostgREST
+    // `or()` control characters so a stray comma/paren can't alter the filter.
+    const term = filters.search
+      .trim()
+      .replace(/[(),*%]/g, " ")
+      .replace(/\s+/g, " ")
+      .trim()
+      .slice(0, 100);
+    if (term) {
+      query = query.or(
+        `search_vector.wfts(simple).${term},task_no.ilike.*${term}*`,
+      );
+    }
+  }
+
+  if (filters.overdue) {
+    // Canonical overdue rule, mirrored from @/lib/tasks/overdue: a due date in
+    // the past and a non-terminal status. Runs in the RLS-scoped query, so a
+    // user only ever sees their own overdue rows.
+    query = query
+      .not("due_date", "is", null)
+      .lt("due_date", todayDateString())
+      .not("status", "in", `(${OVERDUE_EXCLUDED_STATUSES.join(",")})`);
   }
 
   const { data, error } = await query;

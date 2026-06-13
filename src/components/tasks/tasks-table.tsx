@@ -1,11 +1,13 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import Link from "next/link";
+import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { ArrowDown, ArrowUp, ChevronsUpDown, X } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { formatDate, priorityClasses, priorityLabels } from "@/lib/format";
+import { isOverdue } from "@/lib/tasks/overdue";
 import type { TaskWithRelations } from "@/lib/data/types";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -54,6 +56,17 @@ const PRIORITY_RANK: Record<string, number> = {
   critical: 3,
 };
 
+// Params that, when present, mean the user is actively filtering — used to pick
+// the "no matches" empty state over the "no tasks yet" one.
+const FILTER_PARAMS = [
+  "q",
+  "status",
+  "overdue",
+  "priority",
+  "assignee",
+  "business_line",
+];
+
 function textValue(t: TaskWithRelations, key: ColumnKey): string {
   switch (key) {
     case "task_no":
@@ -84,9 +97,7 @@ function compare(
     return av - bv;
   }
   if (type === "priority") {
-    return (
-      (PRIORITY_RANK[a.priority] ?? -1) - (PRIORITY_RANK[b.priority] ?? -1)
-    );
+    return (PRIORITY_RANK[a.priority] ?? -1) - (PRIORITY_RANK[b.priority] ?? -1);
   }
   // Locale-aware, case-insensitive text sort.
   return textValue(a, key).localeCompare(textValue(b, key), undefined, {
@@ -96,16 +107,47 @@ function compare(
 }
 
 /**
- * Client-side task table: Assignee + Business Line filters and column-header
- * sorting (date chronological, text locale-alpha), all over the already-fetched
- * rows — no extra server query or wider data exposure.
+ * Client-side task table over the already-fetched (server- and RLS-filtered)
+ * rows: Assignee + Business Line filters and column-header sorting (the PR #26
+ * behavior), now persisted in the URL. These client filters update the address
+ * bar via the History API — no extra server query or wider data exposure — so
+ * state is shareable/reloadable without a refetch. An Overdue badge marks
+ * overdue rows; two empty states distinguish "no tasks yet" from "no matches".
  */
 export function TasksTable({ tasks }: { tasks: TaskWithRelations[] }) {
-  const [assignee, setAssignee] = useState("all");
-  const [businessLine, setBusinessLine] = useState("all");
-  const [sort, setSort] = useState<{ key: ColumnKey; dir: Direction } | null>(
-    null,
-  );
+  const router = useRouter();
+  const pathname = usePathname();
+  const params = useSearchParams();
+
+  const assignee = params.get("assignee") ?? "all";
+  const businessLine = params.get("business_line") ?? "all";
+
+  const sort = useMemo<{ key: ColumnKey; dir: Direction } | null>(() => {
+    const raw = params.get("sort");
+    if (!raw) return null;
+    const [key, dir] = raw.split(".");
+    if (
+      COLUMNS.some((c) => c.key === key) &&
+      (dir === "asc" || dir === "desc")
+    ) {
+      return { key: key as ColumnKey, dir };
+    }
+    return null;
+  }, [params]);
+
+  // Update a client-side filter param without a server round-trip (History API);
+  // useSearchParams stays in sync so the table re-renders instantly.
+  const setClientParam = (key: string, value: string | null) => {
+    const next = new URLSearchParams(window.location.search);
+    if (value && value !== "all") next.set(key, value);
+    else next.delete(key);
+    const qs = next.toString();
+    window.history.replaceState(
+      null,
+      "",
+      qs ? `${pathname}?${qs}` : pathname,
+    );
+  };
 
   // Filter options derived from the visible rows (so options never resolve to
   // an empty result set).
@@ -149,23 +191,30 @@ export function TasksTable({ tasks }: { tasks: TaskWithRelations[] }) {
     return next;
   }, [tasks, assignee, businessLine, sort]);
 
-  const toggleSort = (key: ColumnKey) =>
-    setSort((prev) =>
-      prev?.key === key
-        ? { key, dir: prev.dir === "asc" ? "desc" : "asc" }
-        : { key, dir: "asc" },
-    );
-
-  const hasFilters = assignee !== "all" || businessLine !== "all";
-  const clearFilters = () => {
-    setAssignee("all");
-    setBusinessLine("all");
+  const toggleSort = (key: ColumnKey) => {
+    const nextDir: Direction =
+      sort?.key === key && sort.dir === "asc" ? "desc" : "asc";
+    setClientParam("sort", `${key}.${nextDir}`);
   };
+
+  const clearClientFilters = () => {
+    const next = new URLSearchParams(window.location.search);
+    next.delete("assignee");
+    next.delete("business_line");
+    const qs = next.toString();
+    window.history.replaceState(null, "", qs ? `${pathname}?${qs}` : pathname);
+  };
+
+  const hasClientFilters = assignee !== "all" || businessLine !== "all";
+  const anyFilterActive = FILTER_PARAMS.some((k) => params.get(k));
 
   return (
     <>
       <div className="mb-4 flex flex-wrap items-center gap-2">
-        <Select value={assignee} onValueChange={setAssignee}>
+        <Select
+          value={assignee}
+          onValueChange={(v) => setClientParam("assignee", v)}
+        >
           <SelectTrigger className="w-48">
             <SelectValue placeholder="Assignee" />
           </SelectTrigger>
@@ -179,7 +228,10 @@ export function TasksTable({ tasks }: { tasks: TaskWithRelations[] }) {
           </SelectContent>
         </Select>
 
-        <Select value={businessLine} onValueChange={setBusinessLine}>
+        <Select
+          value={businessLine}
+          onValueChange={(v) => setClientParam("business_line", v)}
+        >
           <SelectTrigger className="w-48">
             <SelectValue placeholder="Business Line" />
           </SelectTrigger>
@@ -193,8 +245,8 @@ export function TasksTable({ tasks }: { tasks: TaskWithRelations[] }) {
           </SelectContent>
         </Select>
 
-        {hasFilters && (
-          <Button variant="ghost" size="sm" onClick={clearFilters}>
+        {hasClientFilters && (
+          <Button variant="ghost" size="sm" onClick={clearClientFilters}>
             <X className="size-4" />
             Clear
           </Button>
@@ -202,10 +254,26 @@ export function TasksTable({ tasks }: { tasks: TaskWithRelations[] }) {
       </div>
 
       {rows.length === 0 ? (
-        <EmptyState
-          title="No tasks found"
-          description="Try adjusting your filters, or create a new task."
-        />
+        anyFilterActive ? (
+          <EmptyState
+            title="No tasks match"
+            description="No tasks match these filters or search. Try clearing some."
+            action={
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => router.push(pathname)}
+              >
+                Clear all filters
+              </Button>
+            }
+          />
+        ) : (
+          <EmptyState
+            title="No tasks yet"
+            description="Tasks you create or that are assigned to you will appear here."
+          />
+        )
       ) : (
         <div className="rounded-lg border">
           <Table stickyFirstColumn>
@@ -278,7 +346,17 @@ export function TasksTable({ tasks }: { tasks: TaskWithRelations[] }) {
                     {t.assignee?.full_name ?? "Unassigned"}
                   </TableCell>
                   <TableCell className="text-muted-foreground text-sm">
-                    {formatDate(t.due_date)}
+                    <span className="flex items-center gap-2">
+                      {formatDate(t.due_date)}
+                      {isOverdue(t.due_date, t.status) && (
+                        <Badge
+                          variant="destructive"
+                          className="bg-destructive text-white"
+                        >
+                          Overdue
+                        </Badge>
+                      )}
+                    </span>
                   </TableCell>
                 </TableRow>
               ))}
