@@ -1054,6 +1054,14 @@ export type Database = {
         Returns: string
       }
       generate_due_recurring_tasks: { Args: never; Returns: number }
+      get_latest_live_snapshot: {
+        Args: never
+        Returns: {
+          week_start: string
+          created_at: string
+          data: Json
+        }[]
+      }
       get_my_permissions: { Args: never; Returns: string[] }
       notify_role: {
         Args: {

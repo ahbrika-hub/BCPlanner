@@ -12,22 +12,26 @@ export type WeeklySnapshot = {
   data: DashboardData;
 } | null;
 
-/** The most recent weekly snapshot (validated), or null if none/invalid. */
+/**
+ * The latest LIVE weekly snapshot (validated), or null if none/invalid.
+ *
+ * LIVE = the linked "Dashboard Update" task is completed (accepted by
+ * section_head/admin) OR there is no linked task (admin seed / sample data →
+ * always live). The live-check runs in the `get_latest_live_snapshot` SECURITY
+ * DEFINER function so it is NOT filtered by the viewer's task RLS — every
+ * dashboard.read viewer (incl. ceo/employee) sees the accepted snapshot. The
+ * function still gates on the caller's dashboard.read.
+ */
 export async function getLatestSnapshot(): Promise<WeeklySnapshot> {
   const supabase = await createClient();
-  const { data } = await supabase
-    .from("dashboard_snapshots")
-    .select("week_start, created_at, data")
-    .order("week_start", { ascending: false })
-    .order("created_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
-  if (!data) return null;
-  const parsed = dashboardDataSchema.safeParse(data.data);
+  const { data } = await supabase.rpc("get_latest_live_snapshot");
+  const row = Array.isArray(data) ? data[0] : null;
+  if (!row) return null;
+  const parsed = dashboardDataSchema.safeParse(row.data);
   if (!parsed.success) return null;
   return {
-    weekStart: data.week_start,
-    createdAt: data.created_at,
+    weekStart: row.week_start,
+    createdAt: row.created_at,
     data: parsed.data,
   };
 }
