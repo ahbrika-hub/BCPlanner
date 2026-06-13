@@ -1,12 +1,11 @@
 import Link from "next/link";
 
-import { getReportData } from "@/lib/data/reports";
+import { getDelayedReport } from "@/lib/data/delayed";
 import { listBusinessLines } from "@/lib/data/business-lines";
 import { listAssignableUsers } from "@/lib/data/profiles";
 import { getCurrentProfile, getCurrentPermissions } from "@/lib/auth/session";
 import { can } from "@/lib/permissions";
 import { formatDate } from "@/lib/format";
-import type { TaskStatus } from "@/lib/data/types";
 import { PageHeader } from "@/components/layout/page-header";
 import { EmptyState } from "@/components/ui/empty-state";
 import { StatusBadge } from "@/components/ui/status-badge";
@@ -21,7 +20,6 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { KpiCard } from "@/components/charts/kpi-card";
-import { StatusDistributionChart } from "@/components/charts/status-distribution-chart";
 import { BarComparisonChart } from "@/components/charts/bar-comparison-chart";
 import { ReportFilters } from "@/components/reports/report-filters";
 import {
@@ -29,24 +27,25 @@ import {
   type CsvRow,
 } from "@/components/reports/export-csv-button";
 
-export default async function ReportsPage({
+// Live, permission-scoped data via cookies — render on demand.
+export const dynamic = "force-dynamic";
+
+export default async function DelayedReportPage({
   searchParams,
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const profile = await getCurrentProfile();
   const permissions = profile ? await getCurrentPermissions() : [];
-  if (
-    !profile ||
-    (!can("reports.read", permissions) &&
-      !can("reports.read_all", permissions))
-  ) {
+  // Department-wide breakdown by employee — gated to the management set
+  // (admin / section_head / ceo). Plain reports.read (employee) is excluded.
+  if (!profile || !can("reports.read_all", permissions)) {
     return (
       <>
-        <PageHeader title="Reports" />
+        <PageHeader title="Delayed tasks" />
         <EmptyState
           title="Access restricted"
-          description="You don't have permission to view reports."
+          description="You don't have permission to view the delayed-tasks report."
         />
       </>
     );
@@ -55,71 +54,47 @@ export default async function ReportsPage({
   const sp = await searchParams;
   const str = (v: string | string[] | undefined) =>
     typeof v === "string" && v ? v : undefined;
-  // Select filters use "all" as the sentinel for "no filter" (the UI deletes the
-  // param, but a hand-crafted/stale ?key=all must not become an eq("all") that
-  // empties the report).
   const sel = (v: string | string[] | undefined) => {
     const s = str(v);
     return s && s !== "all" ? s : undefined;
   };
 
-  const [{ tasks, summary }, businessLines, assignees] = await Promise.all([
-    getReportData({
+  const [report, businessLines, assignees] = await Promise.all([
+    getDelayedReport({
       from: str(sp.from),
       to: str(sp.to),
       business_line_id: sel(sp.business_line),
       assignee_id: sel(sp.assignee),
-      status: sel(sp.status) as TaskStatus | undefined,
     }),
     listBusinessLines(),
     listAssignableUsers(),
   ]);
 
-  // aggregates for charts
-  const byStatus: Record<string, number> = {};
-  const byLine: Record<string, number> = {};
-  for (const t of tasks) {
-    byStatus[t.status] = (byStatus[t.status] ?? 0) + 1;
-    const name = t.business_line?.name ?? "Unassigned";
-    byLine[name] = (byLine[name] ?? 0) + 1;
-  }
-  const dist = Object.entries(byStatus).map(([status, count]) => ({
-    status,
-    count,
-  }));
-  const lineData = Object.entries(byLine).map(([label, count]) => ({
-    label,
-    count,
-  }));
-  const completionData = [
-    { label: "Completed", count: summary.completed },
-    { label: "Delayed", count: summary.delayed },
-  ];
-
-  const csvRows: CsvRow[] = tasks.map((t) => ({
+  const csvRows: CsvRow[] = report.tasks.map((t) => ({
     task_no: t.task_no ?? "",
     title: t.title,
     status: t.status,
     priority: t.priority,
-    assignee: t.assignee?.full_name ?? "",
-    created: t.created_at?.slice(0, 10) ?? "",
+    assignee: t.assignee_name ?? "",
+    business_line: t.business_line_name ?? "",
     due: t.due_date ?? "",
-    completed: t.completed_at?.slice(0, 10) ?? "",
+    delay_days: t.delay_days,
   }));
 
   return (
     <>
       <PageHeader
-        title="Reports"
-        subtitle="Filter, analyse, and export"
+        title="Delayed tasks"
+        subtitle="Open tasks past their due date, by employee, line, and priority"
         actions={
           <div className="flex items-center gap-2">
-            {can("reports.read_all", permissions) && (
-              <Button asChild size="sm" variant="outline">
-                <Link href="/reports/delayed">Delayed report</Link>
-              </Button>
-            )}
-            <ExportCsvButton rows={csvRows} />
+            <Button asChild size="sm" variant="ghost">
+              <Link href="/reports">Back to reports</Link>
+            </Button>
+            <ExportCsvButton
+              rows={csvRows}
+              filename="tss-planner-delayed-tasks.csv"
+            />
           </div>
         }
       />
@@ -127,55 +102,76 @@ export default async function ReportsPage({
       <ReportFilters businessLines={businessLines} assignees={assignees} />
 
       <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <KpiCard label="Tasks" value={summary.count} />
-        <KpiCard
-          label="Completed"
-          value={summary.completed}
-          accent="var(--color-status-completed)"
-        />
         <KpiCard
           label="Delayed"
-          value={summary.delayed}
+          value={report.delayedCount}
           accent="var(--color-danger)"
         />
         <KpiCard
-          label="Avg quality"
-          value={summary.avgQuality ?? "—"}
+          label="On track"
+          value={report.onTrackCount}
+          accent="var(--color-status-completed)"
+        />
+        <KpiCard
+          label="Avg delay (days)"
+          value={report.avgDelayDays ?? "—"}
           accent="var(--color-warning)"
+        />
+        <KpiCard
+          label="Max delay (days)"
+          value={report.maxDelayDays}
+          accent="var(--color-danger)"
         />
       </div>
 
-      <div className="mb-6 grid gap-6 lg:grid-cols-3">
+      <div className="mb-6 grid gap-6 lg:grid-cols-2">
         <Card>
           <CardHeader>
-            <CardTitle>By status</CardTitle>
+            <CardTitle>Delayed by employee</CardTitle>
           </CardHeader>
           <CardContent>
-            <StatusDistributionChart data={dist} variant="report" />
+            <BarComparisonChart
+              data={report.byEmployee}
+              color="var(--color-danger)"
+            />
           </CardContent>
         </Card>
         <Card>
           <CardHeader>
-            <CardTitle>By business line</CardTitle>
+            <CardTitle>Delayed by business line</CardTitle>
           </CardHeader>
           <CardContent>
-            <BarComparisonChart data={lineData} color="var(--secondary)" />
+            <BarComparisonChart
+              data={report.byBusinessLine}
+              color="var(--secondary)"
+            />
           </CardContent>
         </Card>
         <Card>
           <CardHeader>
-            <CardTitle>Completion vs delay</CardTitle>
+            <CardTitle>Delayed by priority</CardTitle>
           </CardHeader>
           <CardContent>
-            <BarComparisonChart data={completionData} />
+            <BarComparisonChart
+              data={report.byPriority}
+              color="var(--color-warning)"
+            />
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle>Delayed vs on track</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <BarComparisonChart data={report.completion} />
           </CardContent>
         </Card>
       </div>
 
-      {tasks.length === 0 ? (
+      {report.tasks.length === 0 ? (
         <EmptyState
-          title="No tasks match"
-          description="Adjust the filters above."
+          title="Nothing delayed"
+          description="No open tasks are past their due date for this filter."
         />
       ) : (
         <div className="rounded-lg border">
@@ -186,32 +182,37 @@ export default async function ReportsPage({
                 <TableHead>Title</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Assignee</TableHead>
-                <TableHead>Created</TableHead>
+                <TableHead>Business Line</TableHead>
                 <TableHead>Due</TableHead>
-                <TableHead>Completed</TableHead>
+                <TableHead className="text-right">Delay (days)</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {tasks.map((t) => (
+              {report.tasks.map((t) => (
                 <TableRow key={t.id}>
                   <TableCell className="font-mono text-xs">
-                    {t.task_no}
+                    <Link
+                      href={`/tasks/${t.id}`}
+                      className="hover:underline"
+                    >
+                      {t.task_no}
+                    </Link>
                   </TableCell>
                   <TableCell className="font-medium">{t.title}</TableCell>
                   <TableCell>
                     <StatusBadge status={t.status} />
                   </TableCell>
                   <TableCell className="text-muted-foreground text-sm">
-                    {t.assignee?.full_name ?? "—"}
+                    {t.assignee_name ?? "—"}
                   </TableCell>
                   <TableCell className="text-muted-foreground text-sm">
-                    {formatDate(t.created_at)}
+                    {t.business_line_name ?? "—"}
                   </TableCell>
                   <TableCell className="text-muted-foreground text-sm">
                     {formatDate(t.due_date)}
                   </TableCell>
-                  <TableCell className="text-muted-foreground text-sm">
-                    {formatDate(t.completed_at)}
+                  <TableCell className="text-danger text-right font-semibold tabular-nums">
+                    {t.delay_days}
                   </TableCell>
                 </TableRow>
               ))}
