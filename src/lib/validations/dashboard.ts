@@ -15,6 +15,18 @@ const kpiTargetSchema = z.object({
   suffix: z.string().optional(),
 });
 
+/**
+ * KPI delta. Legacy snapshots send a plain string (e.g. "+6%"); the new design
+ * sends {dir,text}. Both are accepted so existing snapshots still validate.
+ */
+export const kpiDeltaSchema = z.union([
+  z.string(),
+  z.object({
+    dir: z.enum(["up", "down", "flat"]),
+    text: z.string(),
+  }),
+]);
+
 const kpiSchema = z.object({
   id: z.string(),
   label: z.string(),
@@ -23,12 +35,14 @@ const kpiSchema = z.object({
     mtd: z.string(),
     ytd: z.string(),
   }),
-  delta: z.string().optional().default(""),
+  delta: kpiDeltaSchema.optional(),
   rag: ragSchema,
   note: z.string().optional(),
   target: kpiTargetSchema.optional(),
   tag: z.string().optional(),
-  lead: z.string().optional(),
+  // Hero flag. New design uses a boolean; the existing parser emits a string
+  // cell — accept both (truthiness decides), so no parser change is needed.
+  lead: z.union([z.boolean(), z.string()]).optional(),
 });
 
 const kpiGroupSchema = z.object({
@@ -46,6 +60,13 @@ const seriesSchema = z.object({
   data: z.array(z.number()),
 });
 
+// Optional presentation fields shared by every chart (DELTA — absent in legacy
+// snapshots): a subtitle and a layout span ("wide" = full-row + taller).
+const chartChrome = {
+  subtitle: z.string().optional(),
+  span: z.enum(["wide", "half"]).optional(),
+};
+
 const groupedBarChartSchema = z.object({
   id: z.string(),
   title: z.string(),
@@ -53,6 +74,19 @@ const groupedBarChartSchema = z.object({
   valueKind: z.enum(["currency", "count"]),
   categories: z.array(z.string()),
   series: z.array(seriesSchema),
+  ...chartChrome,
+});
+
+// Trend line chart — identical {categories, series[]} shape to groupedBar
+// (DELTA §7; needs a stored weekly time series upstream, not in this PR).
+const lineChartSchema = z.object({
+  id: z.string(),
+  title: z.string(),
+  type: z.literal("line"),
+  valueKind: z.enum(["currency", "count"]),
+  categories: z.array(z.string()),
+  series: z.array(seriesSchema),
+  ...chartChrome,
 });
 
 const segmentSchema = z.object({
@@ -67,6 +101,7 @@ const doughnutChartSchema = z.object({
   type: z.literal("doughnut"),
   valueKind: z.enum(["currency", "count"]),
   segments: z.array(segmentSchema),
+  ...chartChrome,
 });
 
 const barChartSchema = z.object({
@@ -75,10 +110,12 @@ const barChartSchema = z.object({
   type: z.literal("bar"),
   valueKind: z.enum(["currency", "count"]),
   segments: z.array(segmentSchema),
+  ...chartChrome,
 });
 
 export const chartSchema = z.discriminatedUnion("type", [
   groupedBarChartSchema,
+  lineChartSchema,
   doughnutChartSchema,
   barChartSchema,
 ]);
@@ -87,6 +124,8 @@ const columnSchema = z.object({
   key: z.string(),
   label: z.string(),
   kind: z.enum(["text", "num", "currency", "chip", "rag", "minibar", "share"]),
+  align: z.enum(["left", "right"]).optional(),
+  strong: z.boolean().optional(),
 });
 
 /**
@@ -117,6 +156,7 @@ const cellValueSchema = z.union([
 const tableSchema = z.object({
   id: z.string(),
   title: z.string(),
+  meta: z.string().optional(),
   columns: z.array(columnSchema),
   rows: z.array(z.record(z.string(), cellValueSchema)),
 });
@@ -126,6 +166,7 @@ const businessLineSchema = z.object({
   name: z.string(),
   accent: z.string(),
   isSample: z.boolean(),
+  tagline: z.string().optional(),
   kpiGroups: z.array(kpiGroupSchema),
   charts: z.array(chartSchema),
   tables: z.array(tableSchema),

@@ -162,12 +162,79 @@
   --color-priority-medium: #1d4ed8; /* blue-700   — 6.70:1 */
   --color-priority-high: #b45309; /* amber-700  — 5.02:1 */
   --color-priority-critical: #b91c1c; /* red-700    — 6.47:1 */
+
+  /* ── Weekly Dashboard design tokens (TSS migration §4) ──────────────────
+     Lifted 1:1 from the design system's colors_and_type.css. Consumed only via
+     `var(--color-*)` in the weekly-dashboard components (never hard-coded hex),
+     so they live here (static) to avoid tree-shaking. Namespaced so they never
+     clobber the app-wide semantic tokens above. */
+  /* Brand anchors + tints */
+  --color-burgundy: #762651;
+  --color-burgundy-700: #5b1b3d;
+  --color-burgundy-100: #e7d4de;
+  --color-burgundy-50: #f5ecf1;
+  --color-navy: #193560;
+  --color-navy-700: #122749;
+  --color-navy-50: #eef1f7;
+  /* Sub-brand accents (each pairs with navy) */
+  --color-merapp: #ee8742;
+  --color-merapp-700: #c8651f;
+  --color-ds: #3d8540;
+  --color-artc: #6aa5cd;
+  /* Neutral text ramp: ink → ink-2 → ink-3 (muted) → ink-4 (dim) */
+  --color-ink: #0f1722;
+  --color-ink-2: #2b3344;
+  --color-ink-3: #5c6577;
+  --color-ink-4: #8a93a4;
+  /* Hairlines + surfaces */
+  --color-rule: #d6dbe3;
+  --color-rule-soft: #e8ecf2;
+  --color-surface-card: #ffffff;
+  --color-surface-page: #f6f8fb;
+  --color-surface-sunken: #ecf0f5;
+  --color-row-alt: #fafbfd;
+  --color-hover-soft: #eef2f8;
+  /* Status dots/fills (DS traffic-light) */
+  --color-status-green: #4caf50;
+  --color-status-amber: #f4c57a;
+  --color-status-red: #e04e5e;
+  /* RAG text shades (AA on tint) + their tint backgrounds (DELTA §7) */
+  --color-rag-green: #2e7d33;
+  --color-rag-amber: #9a6b12;
+  --color-rag-red: #c0303f;
+  --color-rag-green-bg: #e7f4e8;
+  --color-rag-amber-bg: #fbf1dd;
+  --color-rag-red-bg: #fbe6e8;
 }
 
 body {
   background: var(--color-background);
   color: var(--color-foreground);
   font-family: var(--font-sans);
+}
+
+/* Weekly dashboard KPI grid — desktop uses each group's --cols (up to 7); the
+   §5 breakpoints clamp it (≤1180 → 4-up, ≤880 → 2-up, ≤560 → 1-up). Kept as a
+   class so the dynamic per-group column count survives the media queries. */
+.weekly-kpi-grid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(var(--cols, 4), minmax(0, 1fr));
+}
+@media (max-width: 1180px) {
+  .weekly-kpi-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+@media (max-width: 880px) {
+  .weekly-kpi-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 560px) {
+  .weekly-kpi-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 /*
