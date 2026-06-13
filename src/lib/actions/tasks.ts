@@ -15,6 +15,7 @@ import {
 import { isActiveProject } from "@/lib/data/projects";
 import { addComment } from "@/lib/data/comments";
 import { ACTION_BY_NAME, type TaskAction } from "@/lib/tasks/transitions";
+import { DASHBOARD_UPLOAD_CATEGORY } from "@/lib/dashboard/constants";
 import { emailRole, emailUsers } from "@/lib/email/events";
 import type { Tables } from "@/lib/data/types";
 
@@ -215,6 +216,12 @@ export async function transitionTaskAction(
     revalidatePath("/tasks");
     revalidatePath("/approvals");
     revalidatePath("/notifications");
+    // Live-on-acceptance: completing a "Dashboard Update" task accepts its
+    // snapshot, so the weekly dashboard's latest LIVE snapshot may change.
+    if (desc.to === "completed" && task.category === DASHBOARD_UPLOAD_CATEGORY) {
+      revalidatePath("/dashboard/weekly");
+      revalidatePath("/dashboard");
+    }
     return { ok: true, id };
   } catch (e) {
     return fail(errMessage(e));
