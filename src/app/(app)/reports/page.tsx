@@ -33,7 +33,11 @@ export default async function ReportsPage({
 }) {
   const profile = await getCurrentProfile();
   const permissions = profile ? await getCurrentPermissions() : [];
-  if (!profile || !can("reports.read", permissions)) {
+  if (
+    !profile ||
+    (!can("reports.read", permissions) &&
+      !can("reports.read_all", permissions))
+  ) {
     return (
       <>
         <PageHeader title="Reports" />
