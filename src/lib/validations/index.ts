@@ -1,5 +1,6 @@
 export * from "./tasks";
 export * from "./task-updates";
+export * from "./task-templates";
 export * from "./profiles";
 export * from "./performance";
 export * from "./projects";

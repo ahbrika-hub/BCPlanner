@@ -11,6 +11,7 @@ import {
   Settings,
   Shield,
   FolderKanban,
+  LayoutTemplate,
   type LucideIcon,
 } from "lucide-react";
 
@@ -126,6 +127,12 @@ export const navSections: NavSection[] = [
         href: "/admin/projects",
         icon: FolderKanban,
         permission: "projects.manage",
+      },
+      {
+        label: "Templates",
+        href: "/admin/templates",
+        icon: LayoutTemplate,
+        permission: "templates.manage",
       },
       {
         label: "Settings",
