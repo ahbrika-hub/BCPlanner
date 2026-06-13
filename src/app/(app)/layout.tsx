@@ -21,7 +21,15 @@ export default async function AppLayout({
     redirect("/login");
   }
 
-  const profile = await getCurrentProfile();
+  // Independent of one another (profile, permissions, and the unread badge),
+  // so fetch them in parallel. `getCurrentUser()` is `cache()`-wrapped, so the
+  // profile fetch reuses the session already resolved above.
+  const [profile, permissions, unreadCount] = await Promise.all([
+    getCurrentProfile(),
+    getCurrentPermissions(),
+    getUnreadCount(),
+  ]);
+
   if (!profile || !profile.is_active) {
     redirect(
       profile?.account_status === "pending"
@@ -29,9 +37,6 @@ export default async function AppLayout({
         : "/login?error=inactive",
     );
   }
-
-  const permissions = await getCurrentPermissions();
-  const unreadCount = await getUnreadCount();
 
   return (
     <SessionProvider value={{ user, profile, permissions }}>

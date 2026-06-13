@@ -1,6 +1,6 @@
 # TSS Planner — System State
 
-**Status:** Live in production · **Audit date:** 2026-06-06 · **Branch of record:** `main`
+**Status:** Live in production · **Audit date:** 2026-06-13 · **Branch of record:** `main`
 
 This is the single source of truth for the *current* state of TSS Planner: what's
 deployed, what's delivered, known issues, pending manual steps, the production
@@ -55,6 +55,8 @@ CLI **2.105.0** (pinned in CI/CD workflows).
 | P6 | Management & config (recurring tasks, user management, settings, audit log) |
 | P7 | Launch (prod sync migration, tests + CI, recurring cron, feature-flagged email, security hardening, go-live runbook) |
 | Post-launch | Production DB rebuild from an incompatible legacy schema; hosted-safe storage migration; pinned CD; domain fix |
+| PR #43 (auth foundation) | CEO `/reports` access (`reports.read` **OR** `reports.read_all`); app-layer authz on `getAttachmentUrlAction` (per-task visibility) + `deleteAttachmentAction` (owner/`tasks.delete`). No RLS relaxed |
+| This PR (perf/UX/docs) | `cache()`-wrapped auth helpers + parallel layout fetch; route `loading.tsx` skeletons; docs reconciled to shipped state. Behavior-neutral |
 
 ## 5. Database
 
@@ -65,7 +67,7 @@ CLI **2.105.0** (pinned in CI/CD workflows).
 - **9 `SECURITY DEFINER` functions**, all with `set search_path = ''`.
 - RBAC: `permissions` + `role_permissions` resolved via `authorize()` and
   `get_my_permissions()`; reference data ships as an idempotent migration.
-- **16 migration files**, including the one-time
+- **26 migration files**, including the one-time
   `20260606140000_reset_legacy_public_schema.sql`.
 
 > **Rebuild note (important history):** the production project
@@ -105,15 +107,22 @@ CLI **2.105.0** (pinned in CI/CD workflows).
    service-role key; "CEO" is a *role*, not an account type. Correct flow:
    create the auth account (Dashboard invite → user sets password), **then**
    promote the role. Full steps in [ONBOARDING.md](./ONBOARDING.md).
-3. **A few server actions rely on RLS rather than an explicit app-layer gate** —
-   `markNotificationReadAction`/`markAllNotificationsReadAction` (no app check),
-   `deleteAttachmentAction` (authenticated but no `can(...)`), and
-   `getAttachmentUrlAction` (no auth/membership check before minting a signed
-   URL). RLS mitigates most, but Tier 1 closes the gaps.
-4. **No loading states** (`loading.tsx`/Suspense) anywhere — navigation blocks on
-   the server fetch with no skeleton. Tier 2.
-5. **Auth helpers aren't `cache()`-wrapped** — `getCurrentUser/Profile/Permissions`
-   run multiple times per request (layout + page). Tier 1 perf win.
+3. ~~**A few server actions rely on RLS rather than an explicit app-layer
+   gate.**~~ **Closed (PR #43).** `getAttachmentUrlAction` now checks
+   `attachments.download` + RLS-scoped per-task visibility before minting a
+   signed URL; `deleteAttachmentAction` now enforces uploader-or-`tasks.delete`.
+   The notification mark-read/mark-all actions were verified already
+   owner-scoped (RLS `notifications_update`/`_delete` + owner-scoped bulk
+   actions) and were left unchanged. RLS remains the backstop on all of them.
+4. ~~**No loading states.**~~ **Addressed (this PR).** Route-level
+   `loading.tsx` skeletons now cover the major `(app)` routes (dashboard, tasks,
+   approvals, workload, performance, reports, recurring, notifications, and the
+   admin projects/users/settings/audit routes), built from shared brand
+   skeleton primitives.
+5. ~~**Auth helpers aren't `cache()`-wrapped.**~~ **Fixed (this PR).**
+   `getCurrentUser/Profile/Permissions` are wrapped in React `cache()`
+   (request-scoped) and the `(app)` layout fetches profile/permissions/unread
+   in parallel via `Promise.all`. Return values and gating are unchanged.
 6. **`/tasks` status filter is single-select** though the data layer already
    supports arrays (`.in('status', …)`). UI-only fix — Tier 2 (B2).
 
@@ -147,6 +156,5 @@ Tier 1–4 plan.
   `RESEND_API_KEY` (+ `EMAIL_FROM`).
 - `MODULE_ADMIN.md` says recurring generation is "planned for Phase 7 — manual
   trigger for now"; the cron route + `vercel.json` schedule now exist.
-- `GO_LIVE_CHECKLIST.md` previously said "14 files"; there are now 16 migrations
-  (updated in this PR).
+- `GO_LIVE_CHECKLIST.md` previously said "14 files"; there are now 26 migrations.
 - `ARCHITECTURE.md` was P1-era; refreshed in this PR.

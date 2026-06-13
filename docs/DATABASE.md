@@ -73,6 +73,19 @@ application role comes from their JWT (`auth.uid()` → `profiles.role`).
   authoring.**
 - **admin** (38): all permissions, including `roles.manage`.
 
+> **Permission reconciliation (verified against `supabase/seed.sql` /
+> `20260606171529_reference_data_seed.sql` — the canonical source).** The
+> per-role counts above match the seed exactly: **38** total permission keys;
+> **employee 15**, **section_head 35**, **ceo 10**, **admin 38**. No permission
+> grant was changed while reconciling these docs.
+>
+> **Decision item — `employee` holds `reports.read`.** The seed grants
+> `reports.read` to `employee` (alongside `workload.read` and
+> `performance.read`), so employees can open `/reports` (the route allows
+> `reports.read` **OR** `reports.read_all` as of PR #43). If reporting should be
+> management-only, revoke `reports.read` from `employee` in a future migration —
+> that is a deliberate permission change and is intentionally **not** made here.
+
 ## RLS summary
 
 RLS is **enabled on all 15 tables** with default-deny. Highlights:
@@ -88,7 +101,7 @@ RLS is **enabled on all 15 tables** with default-deny. Highlights:
 | `task_attachments`                                                | `attachments.download` + task visible | INSERT: `attachments.upload` + uploader self + visible; DELETE: own or `tasks.delete`                        |
 | `recurring_tasks`                                                 | `recurring.manage`                    | `recurring.manage`                                                                                           |
 | `performance_evaluations`                                         | own or `performance.read_all`         | INSERT/UPDATE: `performance.evaluate`; DELETE: evaluate + `users.manage`                                     |
-| `notifications`                                                   | own only                              | UPDATE own (mark read); **no client INSERT/DELETE**                                                          |
+| `notifications`                                                   | own only                              | UPDATE own (mark read); DELETE own (`notifications_delete`, owner-scoped, added `20260609092611`); **no client INSERT**          |
 | `audit_logs`                                                      | `audit.read`                          | **never from clients**                                                                                       |
 | `task_no_counters`                                                | —                                     | **never from clients** (written only by `generate_task_no()`)                                                |
 
