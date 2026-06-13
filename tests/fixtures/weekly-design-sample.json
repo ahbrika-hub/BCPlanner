@@ -1,0 +1,1443 @@
+{
+  "meta": {
+    "title": "Business Lines · Weekly Dashboard",
+    "subtitle": "Technical Shared Services · SAPTCO",
+    "lastRefreshed": "25 May 2026 · 09:00 AST",
+    "weekStart": "2026-05-19",
+    "periods": [
+      {
+        "id": "week",
+        "label": "This Week"
+      },
+      {
+        "id": "mtd",
+        "label": "Month to Date"
+      },
+      {
+        "id": "ytd",
+        "label": "Year to Date"
+      }
+    ],
+    "defaultBl": "tss",
+    "defaultPeriod": "week",
+    "footLeft": "TSS Weekly Dashboard · Week 21 · 19–25 May 2026",
+    "footRight": "Sourced from Revenue · Technician KPI · Fleet · Insurance · Closing & SDS reports · 17 source files"
+  },
+  "businessLines": [
+    {
+      "id": "tss",
+      "name": "TSS · Consolidated",
+      "accent": "#762651",
+      "isSample": false,
+      "tagline": "Technical Shared Services · portfolio roll-up across all business lines",
+      "kpiGroups": [
+        {
+          "num": "01",
+          "title": "Consolidated Revenue",
+          "subtitle": "Across merapp · Driving School · Aalam Alreyadah",
+          "accent": "#762651",
+          "cols": 4,
+          "kpis": [
+            {
+              "id": "t-rev",
+              "label": "Total Revenue",
+              "lead": true,
+              "tag": "GROUP",
+              "values": {
+                "week": "SAR 543K",
+                "mtd": "SAR 1.68M",
+                "ytd": "SAR 7.32M"
+              },
+              "delta": {
+                "dir": "up",
+                "text": "+9% vs prior week"
+              },
+              "rag": "green",
+              "note": "YTD across 3 active business lines"
+            },
+            {
+              "id": "t-billed",
+              "label": "Billed Revenue",
+              "values": {
+                "week": "SAR 421K",
+                "mtd": "SAR 1.29M",
+                "ytd": "SAR 5.71M"
+              },
+              "delta": {
+                "dir": "up",
+                "text": "78% of contracted"
+              },
+              "rag": "green",
+              "note": "Invoiced & recognised"
+            },
+            {
+              "id": "t-unbilled",
+              "label": "Unbilled / Backlog",
+              "values": {
+                "week": "SAR 122K",
+                "mtd": "SAR 392K",
+                "ytd": "SAR 1.61M"
+              },
+              "delta": {
+                "dir": "flat",
+                "text": "22% remaining"
+              },
+              "rag": "amber",
+              "note": "Mostly ARTC PO backlog"
+            },
+            {
+              "id": "t-margin",
+              "label": "Avg Operating Margin",
+              "values": {
+                "week": "31%",
+                "mtd": "30%",
+                "ytd": "29%"
+              },
+              "delta": {
+                "dir": "up",
+                "text": "+2 pts vs Q1"
+              },
+              "rag": "green",
+              "note": "Blended across lines",
+              "target": {
+                "value": 29,
+                "target": 32,
+                "suffix": "%"
+              }
+            }
+          ]
+        },
+        {
+          "num": "02",
+          "title": "Portfolio Operations",
+          "subtitle": "Active lines · throughput · people",
+          "accent": "#193560",
+          "cols": 4,
+          "kpis": [
+            {
+              "id": "t-lines",
+              "label": "Active Business Lines",
+              "values": {
+                "week": "3 / 4",
+                "mtd": "3 / 4",
+                "ytd": "3 / 4"
+              },
+              "delta": {
+                "dir": "flat",
+                "text": "ARTC in preview"
+              },
+              "rag": "amber",
+              "note": "TSS corporate + 3 operating"
+            },
+            {
+              "id": "t-cards",
+              "label": "Total Job Cards / Engagements",
+              "values": {
+                "week": "186",
+                "mtd": "438",
+                "ytd": "4,180"
+              },
+              "delta": {
+                "dir": "up",
+                "text": "merapp + DS + ARTC"
+              },
+              "rag": "green",
+              "note": "Cards, customers, cohorts"
+            },
+            {
+              "id": "t-people",
+              "label": "Frontline Headcount",
+              "values": {
+                "week": "83",
+                "mtd": "83",
+                "ytd": "83"
+              },
+              "delta": {
+                "dir": "flat",
+                "text": "technicians + instructors"
+              },
+              "rag": "green",
+              "note": "Across all lines"
+            },
+            {
+              "id": "t-util",
+              "label": "Blended Utilization",
+              "values": {
+                "week": "0.81",
+                "mtd": "0.81",
+                "ytd": "0.80"
+              },
+              "delta": {
+                "dir": "flat",
+                "text": "vs 0.90 target"
+              },
+              "rag": "amber",
+              "note": "Capacity-weighted",
+              "target": {
+                "value": 81,
+                "target": 90,
+                "suffix": "%"
+              }
+            }
+          ]
+        }
+      ],
+      "charts": [
+        {
+          "id": "tss-trend",
+          "type": "line",
+          "title": "Consolidated Weekly Revenue Trend",
+          "subtitle": "Last 5 weeks · SAR · by business line",
+          "valueKind": "currency",
+          "span": "wide",
+          "categories": [
+            "W17",
+            "W18",
+            "W19",
+            "W20",
+            "W21"
+          ],
+          "series": [
+            {
+              "name": "merapp",
+              "color": "#EE8742",
+              "data": [
+                86000,
+                91000,
+                88000,
+                95000,
+                98000
+              ]
+            },
+            {
+              "name": "Driving School",
+              "color": "#3D8540",
+              "data": [
+                58000,
+                61000,
+                60000,
+                63000,
+                64620
+              ]
+            },
+            {
+              "name": "Aalam Alreyadah",
+              "color": "#6AA5CD",
+              "data": [
+                340000,
+                355000,
+                360000,
+                372000,
+                380000
+              ]
+            }
+          ]
+        },
+        {
+          "id": "tss-mix",
+          "type": "doughnut",
+          "title": "Revenue by Business Line",
+          "subtitle": "YTD share",
+          "valueKind": "currency",
+          "span": "half",
+          "segments": [
+            {
+              "label": "Aalam Alreyadah",
+              "value": 4240000,
+              "color": "#6AA5CD"
+            },
+            {
+              "label": "merapp",
+              "value": 1742724,
+              "color": "#EE8742"
+            },
+            {
+              "label": "Driving School",
+              "value": 1340000,
+              "color": "#3D8540"
+            }
+          ]
+        },
+        {
+          "id": "tss-billed",
+          "type": "groupedBar",
+          "title": "Billed vs Backlog",
+          "subtitle": "YTD · SAR · by business line",
+          "valueKind": "currency",
+          "span": "half",
+          "categories": [
+            "merapp",
+            "Driving School",
+            "Aalam Alreyadah"
+          ],
+          "series": [
+            {
+              "name": "Billed",
+              "color": "#193560",
+              "data": [
+                1742724,
+                1340000,
+                2630000
+              ]
+            },
+            {
+              "name": "Backlog",
+              "color": "#B780A0",
+              "data": [
+                0,
+                0,
+                1610000
+              ]
+            }
+          ]
+        }
+      ],
+      "tables": [
+        {
+          "id": "tss-scorecard",
+          "title": "Business Line Scorecard",
+          "meta": "YTD · consolidated",
+          "columns": [
+            {
+              "key": "name",
+              "label": "Business Line",
+              "kind": "text",
+              "strong": true
+            },
+            {
+              "key": "type",
+              "label": "Segment",
+              "kind": "chip"
+            },
+            {
+              "key": "rev",
+              "label": "Revenue (SAR)",
+              "align": "right",
+              "kind": "currency",
+              "strong": true
+            },
+            {
+              "key": "billed",
+              "label": "Billed (SAR)",
+              "align": "right",
+              "kind": "currency"
+            },
+            {
+              "key": "units",
+              "label": "Volume",
+              "align": "right",
+              "kind": "num"
+            },
+            {
+              "key": "share",
+              "label": "Share of group",
+              "kind": "share"
+            },
+            {
+              "key": "status",
+              "label": "Status",
+              "kind": "rag"
+            }
+          ],
+          "rows": [
+            {
+              "name": "Aalam Alreyadah",
+              "type": {
+                "label": "Training"
+              },
+              "rev": 4240000,
+              "billed": 2630000,
+              "units": "824 trainees",
+              "share": {
+                "pct": 57.9,
+                "color": "#6AA5CD"
+              },
+              "status": {
+                "label": "Sample",
+                "level": "amber"
+              }
+            },
+            {
+              "name": "merapp",
+              "type": {
+                "label": "Aftermarket"
+              },
+              "rev": 1742724,
+              "billed": 1742724,
+              "units": "1,261 cards",
+              "share": {
+                "pct": 23.8,
+                "color": "#EE8742"
+              },
+              "status": {
+                "label": "On Track",
+                "level": "green"
+              }
+            },
+            {
+              "name": "Driving School",
+              "type": {
+                "label": "Licensing"
+              },
+              "rev": 1340000,
+              "billed": 1340000,
+              "units": "1,840 custs",
+              "share": {
+                "pct": 18.3,
+                "color": "#3D8540"
+              },
+              "status": {
+                "label": "On Track",
+                "level": "green"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "merapp",
+      "name": "merapp",
+      "accent": "#EE8742",
+      "isSample": false,
+      "tagline": "Automotive maintenance & repair · 3 branches · 742 fleet vehicles",
+      "kpiGroups": [
+        {
+          "num": "01",
+          "title": "Revenue KPIs",
+          "subtitle": "Parts · Labor · Fleet · Insurance",
+          "accent": "#EE8742",
+          "cols": 7,
+          "kpis": [
+            {
+              "id": "rev-total",
+              "label": "Total Revenue",
+              "lead": true,
+              "tag": "BL01",
+              "values": {
+                "week": "SAR 98K",
+                "mtd": "SAR 312K",
+                "ytd": "SAR 1.74M"
+              },
+              "delta": {
+                "dir": "up",
+                "text": "+12% vs prior week"
+              },
+              "rag": "green",
+              "note": "YTD SAR 1,742,724 · 60.5% corporate fleet"
+            },
+            {
+              "id": "rev-parts",
+              "label": "Part Revenue",
+              "values": {
+                "week": "SAR 54K",
+                "mtd": "SAR 168K",
+                "ytd": "SAR 946K"
+              },
+              "delta": {
+                "dir": "up",
+                "text": "+8% vs prior week"
+              },
+              "rag": "green",
+              "note": "YTD SAR 946,858"
+            },
+            {
+              "id": "rev-labor",
+              "label": "Labor Revenue",
+              "values": {
+                "week": "SAR 32K",
+                "mtd": "SAR 102K",
+                "ytd": "SAR 567K"
+              },
+              "delta": {
+                "dir": "up",
+                "text": "+6% vs prior week"
+              },
+              "rag": "green",
+              "note": "YTD SAR 566,554"
+            },
+            {
+              "id": "rev-fleet",
+              "label": "Fleet Revenue",
+              "values": {
+                "week": "SAR 60K",
+                "mtd": "SAR 190K",
+                "ytd": "SAR 1.05M"
+              },
+              "delta": {
+                "dir": "up",
+                "text": "60.5% of revenue mix"
+              },
+              "rag": "green",
+              "note": "YTD SAR 1,054,676"
+            },
+            {
+              "id": "rev-avgcard",
+              "label": "Avg Rev / Job Card",
+              "values": {
+                "week": "SAR 1,584",
+                "mtd": "SAR 1,605",
+                "ytd": "SAR 1,616"
+              },
+              "delta": {
+                "dir": "flat",
+                "text": "tracking near target"
+              },
+              "rag": "amber",
+              "note": "Target SAR 1,700 · −5%"
+            },
+            {
+              "id": "rev-avgtech",
+              "label": "Avg Tech Revenue",
+              "values": {
+                "week": "SAR 1,160",
+                "mtd": "SAR 3,830",
+                "ytd": "SAR 11,602"
+              },
+              "delta": {
+                "dir": "flat",
+                "text": "Dammam scope"
+              },
+              "rag": "amber",
+              "note": "10 Dammam technicians"
+            },
+            {
+              "id": "rev-ins",
+              "label": "Insurance Claims",
+              "values": {
+                "week": "SAR 22K",
+                "mtd": "SAR 71K",
+                "ytd": "SAR 671K"
+              },
+              "delta": {
+                "dir": "up",
+                "text": "132 claims YTD"
+              },
+              "rag": "green",
+              "note": "YTD SAR 671,037"
+            }
+          ]
+        },
+        {
+          "num": "02",
+          "title": "Operations KPIs",
+          "subtitle": "Throughput · Productivity · Technicians",
+          "accent": "#193560",
+          "cols": 6,
+          "kpis": [
+            {
+              "id": "ops-eff",
+              "label": "Efficiency",
+              "values": {
+                "week": "90%",
+                "mtd": "90%",
+                "ytd": "90%"
+              },
+              "delta": {
+                "dir": "up",
+                "text": "Dammam on target"
+              },
+              "rag": "green",
+              "note": "Dammam · ≥ 100% target",
+              "target": {
+                "value": 90,
+                "target": 100,
+                "suffix": "%"
+              }
+            },
+            {
+              "id": "ops-techs",
+              "label": "Active Technicians",
+              "values": {
+                "week": "29",
+                "mtd": "29",
+                "ytd": "29"
+              },
+              "delta": {
+                "dir": "flat",
+                "text": "489 tasks logged"
+              },
+              "rag": "amber",
+              "note": "4 below capacity (33)"
+            },
+            {
+              "id": "ops-open",
+              "label": "Open / Partial Cards",
+              "values": {
+                "week": "38",
+                "mtd": "94",
+                "ytd": "~180"
+              },
+              "delta": {
+                "dir": "down",
+                "text": "partial-paid backlog"
+              },
+              "rag": "red",
+              "note": "≈180 need follow-up"
+            },
+            {
+              "id": "ops-util",
+              "label": "Avg Tech Utilization",
+              "values": {
+                "week": "0.85",
+                "mtd": "0.85",
+                "ytd": "0.85"
+              },
+              "delta": {
+                "dir": "flat",
+                "text": "avg of 10 techs"
+              },
+              "rag": "amber",
+              "note": "Dammam · capacity ratio",
+              "target": {
+                "value": 85,
+                "target": 100,
+                "suffix": "%"
+              }
+            },
+            {
+              "id": "ops-hrs",
+              "label": "Avg Tech Actual Hrs",
+              "values": {
+                "week": "34 h",
+                "mtd": "106 h",
+                "ytd": "106 h"
+              },
+              "delta": {
+                "dir": "up",
+                "text": "per technician"
+              },
+              "rag": "green",
+              "note": "Dammam · 1,063 h logged"
+            },
+            {
+              "id": "ops-prod",
+              "label": "Avg Tech Productivity",
+              "values": {
+                "week": "0.71",
+                "mtd": "0.71",
+                "ytd": "0.71"
+              },
+              "delta": {
+                "dir": "flat",
+                "text": "vs 0.90 target"
+              },
+              "rag": "amber",
+              "note": "Dammam · billable ratio"
+            }
+          ]
+        }
+      ],
+      "charts": [
+        {
+          "id": "m-branch",
+          "type": "groupedBar",
+          "title": "Revenue by Branch",
+          "subtitle": "Parts vs Labor · YTD (SAR)",
+          "valueKind": "currency",
+          "span": "wide",
+          "categories": [
+            "Riyadh (Faisaliyah)",
+            "Dammam",
+            "Tabuk"
+          ],
+          "series": [
+            {
+              "name": "Parts",
+              "color": "#EE8742",
+              "data": [
+                710297,
+                126556,
+                92538
+              ]
+            },
+            {
+              "name": "Labor",
+              "color": "#193560",
+              "data": [
+                382791,
+                102233,
+                55748
+              ]
+            }
+          ]
+        },
+        {
+          "id": "m-segment",
+          "type": "doughnut",
+          "title": "Revenue by Segment",
+          "subtitle": "YTD share of revenue",
+          "valueKind": "currency",
+          "span": "half",
+          "segments": [
+            {
+              "label": "Corporate Fleet",
+              "value": 1054676,
+              "color": "#EE8742"
+            },
+            {
+              "label": "Car Rental",
+              "value": 408744,
+              "color": "#193560"
+            },
+            {
+              "label": "Walk-In",
+              "value": 276322,
+              "color": "#6AA5CD"
+            },
+            {
+              "label": "Other",
+              "value": 2982,
+              "color": "#C2CAD7"
+            }
+          ]
+        },
+        {
+          "id": "m-insurers",
+          "type": "bar",
+          "title": "Insurance Claims by Provider",
+          "subtitle": "Count of claims · YTD",
+          "valueKind": "count",
+          "span": "half",
+          "segments": [
+            {
+              "label": "Najm",
+              "value": 71,
+              "color": "#193560"
+            },
+            {
+              "label": "Med Gulf",
+              "value": 41,
+              "color": "#6AA5CD"
+            },
+            {
+              "label": "360 Network",
+              "value": 20,
+              "color": "#9CB4CF"
+            }
+          ]
+        }
+      ],
+      "tables": [
+        {
+          "id": "m-techs",
+          "title": "Technician KPIs",
+          "meta": "Dammam · top 10 by revenue",
+          "columns": [
+            {
+              "key": "name",
+              "label": "Technician",
+              "kind": "text",
+              "strong": true
+            },
+            {
+              "key": "type",
+              "label": "Type",
+              "kind": "chip"
+            },
+            {
+              "key": "eff",
+              "label": "Efficiency",
+              "kind": "minibar"
+            },
+            {
+              "key": "prod",
+              "label": "Prod.",
+              "align": "right",
+              "kind": "num"
+            },
+            {
+              "key": "util",
+              "label": "Util.",
+              "align": "right",
+              "kind": "num"
+            },
+            {
+              "key": "hrs",
+              "label": "Hours",
+              "align": "right",
+              "kind": "num"
+            },
+            {
+              "key": "rev",
+              "label": "Revenue (SAR)",
+              "align": "right",
+              "kind": "currency",
+              "strong": true
+            },
+            {
+              "key": "status",
+              "label": "Status",
+              "kind": "rag"
+            }
+          ],
+          "rows": [
+            {
+              "name": "Mohammad Afsar",
+              "type": {
+                "label": "Body Repair"
+              },
+              "eff": {
+                "value": 0.9,
+                "max": 1.4,
+                "display": "0.90",
+                "color": "#2E7D33"
+              },
+              "prod": "1.10",
+              "util": "1.21",
+              "hrs": "142.6",
+              "rev": 16247,
+              "status": {
+                "label": "On Target",
+                "level": "green"
+              }
+            },
+            {
+              "name": "Faizan Khan",
+              "type": {
+                "label": "Mechanical"
+              },
+              "eff": {
+                "value": 1.13,
+                "max": 1.4,
+                "display": "1.13",
+                "color": "#2E7D33"
+              },
+              "prod": "0.96",
+              "util": "0.85",
+              "hrs": "99.9",
+              "rev": 15758,
+              "status": {
+                "label": "On Target",
+                "level": "green"
+              }
+            },
+            {
+              "name": "Mohammad Yakub",
+              "type": {
+                "label": "Mechanical"
+              },
+              "eff": {
+                "value": 0.64,
+                "max": 1.4,
+                "display": "0.64",
+                "color": "#C0303F"
+              },
+              "prod": "0.90",
+              "util": "1.40",
+              "hrs": "153.0",
+              "rev": 14352,
+              "status": {
+                "label": "Below Target",
+                "level": "red"
+              }
+            },
+            {
+              "name": "Kamil Naseem Ahmad",
+              "type": {
+                "label": "Body Repair"
+              },
+              "eff": {
+                "value": 0.87,
+                "max": 1.4,
+                "display": "0.87",
+                "color": "#9A6B12"
+              },
+              "prod": "0.86",
+              "util": "0.99",
+              "hrs": "124.9",
+              "rev": 14064,
+              "status": {
+                "label": "Near Target",
+                "level": "amber"
+              }
+            },
+            {
+              "name": "Waseem Mohammad",
+              "type": {
+                "label": "Mechanical"
+              },
+              "eff": {
+                "value": 0.78,
+                "max": 1.4,
+                "display": "0.78",
+                "color": "#9A6B12"
+              },
+              "prod": "0.81",
+              "util": "1.04",
+              "hrs": "133.0",
+              "rev": 13675,
+              "status": {
+                "label": "Near Target",
+                "level": "amber"
+              }
+            },
+            {
+              "name": "Raja Ehisham Haider",
+              "type": {
+                "label": "Electrical"
+              },
+              "eff": {
+                "value": 1.25,
+                "max": 1.4,
+                "display": "1.25",
+                "color": "#2E7D33"
+              },
+              "prod": "0.47",
+              "util": "0.38",
+              "hrs": "47.8",
+              "rev": 9268,
+              "status": {
+                "label": "On Target",
+                "level": "green"
+              }
+            },
+            {
+              "name": "Mohammed Faiz",
+              "type": {
+                "label": "Body Repair"
+              },
+              "eff": {
+                "value": 0.67,
+                "max": 1.4,
+                "display": "0.67",
+                "color": "#C0303F"
+              },
+              "prod": "0.78",
+              "util": "1.15",
+              "hrs": "135.0",
+              "rev": 9144,
+              "status": {
+                "label": "Below Target",
+                "level": "red"
+              }
+            },
+            {
+              "name": "Mohammad Ismail",
+              "type": {
+                "label": "Electrical"
+              },
+              "eff": {
+                "value": 1.06,
+                "max": 1.4,
+                "display": "1.06",
+                "color": "#2E7D33"
+              },
+              "prod": "0.00",
+              "util": "0.00",
+              "hrs": "51.5",
+              "rev": 9142,
+              "status": {
+                "label": "On Target",
+                "level": "green"
+              }
+            },
+            {
+              "name": "Gufran Khan",
+              "type": {
+                "label": "Body Repair"
+              },
+              "eff": {
+                "value": 0.92,
+                "max": 1.4,
+                "display": "0.92",
+                "color": "#9A6B12"
+              },
+              "prod": "0.68",
+              "util": "0.74",
+              "hrs": "79.7",
+              "rev": 7466,
+              "status": {
+                "label": "Near Target",
+                "level": "amber"
+              }
+            },
+            {
+              "name": "Shahjan Khan",
+              "type": {
+                "label": "Body Repair"
+              },
+              "eff": {
+                "value": 0.76,
+                "max": 1.4,
+                "display": "0.76",
+                "color": "#C0303F"
+              },
+              "prod": "0.58",
+              "util": "0.76",
+              "hrs": "96.1",
+              "rev": 6900,
+              "status": {
+                "label": "Below Target",
+                "level": "red"
+              }
+            }
+          ]
+        },
+        {
+          "id": "m-branches",
+          "title": "Branch Performance",
+          "meta": "YTD · parts + labor",
+          "columns": [
+            {
+              "key": "name",
+              "label": "Branch",
+              "kind": "text",
+              "strong": true
+            },
+            {
+              "key": "parts",
+              "label": "Parts (SAR)",
+              "align": "right",
+              "kind": "currency"
+            },
+            {
+              "key": "labor",
+              "label": "Labor (SAR)",
+              "align": "right",
+              "kind": "currency"
+            },
+            {
+              "key": "net",
+              "label": "Net (SAR)",
+              "align": "right",
+              "kind": "currency",
+              "strong": true
+            },
+            {
+              "key": "cards",
+              "label": "Job Cards",
+              "align": "right",
+              "kind": "num"
+            },
+            {
+              "key": "avg",
+              "label": "Avg / Card",
+              "align": "right",
+              "kind": "num"
+            },
+            {
+              "key": "share",
+              "label": "Share of YTD",
+              "kind": "share"
+            },
+            {
+              "key": "status",
+              "label": "Status",
+              "kind": "rag"
+            }
+          ],
+          "rows": [
+            {
+              "name": "Riyadh (Faisaliyah)",
+              "parts": 710297,
+              "labor": 382791,
+              "net": 1257050,
+              "cards": "895",
+              "avg": "SAR 1,405",
+              "share": {
+                "pct": 72.1,
+                "color": "#EE8742"
+              },
+              "status": {
+                "label": "Primary",
+                "level": "green"
+              }
+            },
+            {
+              "name": "Dammam",
+              "parts": 126556,
+              "labor": 102233,
+              "net": 263107,
+              "cards": "183",
+              "avg": "SAR 1,438",
+              "share": {
+                "pct": 15.1,
+                "color": "#193560"
+              },
+              "status": {
+                "label": "Active",
+                "level": "green"
+              }
+            },
+            {
+              "name": "Tabuk",
+              "parts": 92538,
+              "labor": 55748,
+              "net": 170529,
+              "cards": "—",
+              "avg": "—",
+              "share": {
+                "pct": 9.8,
+                "color": "#6AA5CD"
+              },
+              "status": {
+                "label": "Growing",
+                "level": "amber"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "artc",
+      "name": "Aalam Alreyadah",
+      "accent": "#6AA5CD",
+      "isSample": true,
+      "tagline": "Leadership & training academy · illustrative preview",
+      "kpiGroups": [
+        {
+          "num": "01",
+          "title": "Revenue KPIs",
+          "subtitle": "Purchase orders · per-trainee · per-day",
+          "accent": "#6AA5CD",
+          "cols": 5,
+          "kpis": [
+            {
+              "id": "a-po",
+              "label": "Total PO Value",
+              "lead": true,
+              "tag": "SAMPLE",
+              "values": {
+                "week": "SAR 0.38M",
+                "mtd": "SAR 1.16M",
+                "ytd": "SAR 4.24M"
+              },
+              "delta": {
+                "dir": "up",
+                "text": "contracted"
+              },
+              "rag": "green",
+              "note": "Illustrative · 14 customers"
+            },
+            {
+              "id": "a-billed",
+              "label": "Billed PO Value",
+              "values": {
+                "week": "SAR 0.24M",
+                "mtd": "SAR 0.72M",
+                "ytd": "SAR 2.63M"
+              },
+              "delta": {
+                "dir": "up",
+                "text": "62% of PO value"
+              },
+              "rag": "green",
+              "note": "Illustrative · invoiced"
+            },
+            {
+              "id": "a-unbilled",
+              "label": "Unbilled PO Value",
+              "values": {
+                "week": "SAR 0.14M",
+                "mtd": "SAR 0.44M",
+                "ytd": "SAR 1.61M"
+              },
+              "delta": {
+                "dir": "flat",
+                "text": "38% remaining"
+              },
+              "rag": "amber",
+              "note": "Illustrative · backlog"
+            },
+            {
+              "id": "a-pertrainee",
+              "label": "Revenue / Trainee",
+              "values": {
+                "week": "SAR 2,980",
+                "mtd": "SAR 3,060",
+                "ytd": "SAR 3,150"
+              },
+              "delta": {
+                "dir": "up",
+                "text": "blended"
+              },
+              "rag": "green",
+              "note": "Illustrative · 824 trainees"
+            },
+            {
+              "id": "a-perday",
+              "label": "Revenue / Training Day",
+              "values": {
+                "week": "SAR 17,200",
+                "mtd": "SAR 17,850",
+                "ytd": "SAR 18,400"
+              },
+              "delta": {
+                "dir": "up",
+                "text": "avg billing / day"
+              },
+              "rag": "green",
+              "note": "Illustrative · 230 days"
+            }
+          ]
+        },
+        {
+          "num": "02",
+          "title": "Operations KPIs",
+          "subtitle": "Pipeline · customers · trainees · courses",
+          "accent": "#193560",
+          "cols": 4,
+          "kpis": [
+            {
+              "id": "a-cust",
+              "label": "Active Customers",
+              "values": {
+                "week": "11",
+                "mtd": "13",
+                "ytd": "14"
+              },
+              "delta": {
+                "dir": "up",
+                "text": "+3 vs last qtr"
+              },
+              "rag": "green",
+              "note": "Illustrative · corp & gov"
+            },
+            {
+              "id": "a-pipe",
+              "label": "Pipeline Value",
+              "values": {
+                "week": "SAR 6.20M",
+                "mtd": "SAR 6.50M",
+                "ytd": "SAR 6.80M"
+              },
+              "delta": {
+                "dir": "up",
+                "text": "weighted"
+              },
+              "rag": "green",
+              "note": "Illustrative · 22 open deals"
+            },
+            {
+              "id": "a-trainees",
+              "label": "Number of Trainees",
+              "values": {
+                "week": "36",
+                "mtd": "118",
+                "ytd": "824"
+              },
+              "delta": {
+                "dir": "up",
+                "text": "enrolled"
+              },
+              "rag": "green",
+              "note": "Illustrative · 47 cohorts"
+            },
+            {
+              "id": "a-courses",
+              "label": "Courses Delivered",
+              "values": {
+                "week": "2",
+                "mtd": "7",
+                "ytd": "47"
+              },
+              "delta": {
+                "dir": "up",
+                "text": "completed"
+              },
+              "rag": "green",
+              "note": "Illustrative · leadership track"
+            }
+          ]
+        }
+      ],
+      "charts": [
+        {
+          "id": "a-billing",
+          "type": "doughnut",
+          "title": "PO Value · Billed vs Unbilled",
+          "subtitle": "YTD share",
+          "valueKind": "currency",
+          "span": "half",
+          "segments": [
+            {
+              "label": "Billed",
+              "value": 2630000,
+              "color": "#6AA5CD"
+            },
+            {
+              "label": "Unbilled",
+              "value": 1610000,
+              "color": "#193560"
+            }
+          ]
+        }
+      ],
+      "tables": []
+    },
+    {
+      "id": "driving-school",
+      "name": "SAPTCO Driving School",
+      "accent": "#3D8540",
+      "isSample": false,
+      "tagline": "Driver training · Riyadh · May 2026 (cumulative May 4–18)",
+      "kpiGroups": [
+        {
+          "num": "01",
+          "title": "Revenue KPIs",
+          "subtitle": "Revenue · per-customer · by category",
+          "accent": "#3D8540",
+          "cols": 4,
+          "kpis": [
+            {
+              "id": "d-total",
+              "label": "Total Revenue",
+              "lead": true,
+              "tag": "DS01",
+              "values": {
+                "week": "SAR 64,620",
+                "mtd": "SAR 129,246",
+                "ytd": "SAR 1.34M"
+              },
+              "delta": {
+                "dir": "up",
+                "text": "Private + Heavy Transport"
+              },
+              "rag": "green",
+              "note": "MTD exact: SAR 129,245.50"
+            },
+            {
+              "id": "d-percust",
+              "label": "Avg Revenue / Customer",
+              "values": {
+                "week": "SAR 745",
+                "mtd": "SAR 751",
+                "ytd": "SAR 728"
+              },
+              "delta": {
+                "dir": "flat",
+                "text": "blended"
+              },
+              "rag": "green",
+              "note": "Total ÷ customers"
+            },
+            {
+              "id": "d-private",
+              "label": "Private Revenue",
+              "values": {
+                "week": "SAR 47,438",
+                "mtd": "SAR 94,875",
+                "ytd": "SAR 984K"
+              },
+              "delta": {
+                "dir": "up",
+                "text": "73% of revenue"
+              },
+              "rag": "green",
+              "note": "Beginner · Inter · Advanced"
+            },
+            {
+              "id": "d-heavy",
+              "label": "Heavy Transport Revenue",
+              "values": {
+                "week": "SAR 17,185",
+                "mtd": "SAR 34,371",
+                "ytd": "SAR 356K"
+              },
+              "delta": {
+                "dir": "up",
+                "text": "27% of revenue"
+              },
+              "rag": "green",
+              "note": "Skilled · Non-skilled"
+            }
+          ]
+        },
+        {
+          "num": "02",
+          "title": "Operations KPIs",
+          "subtitle": "Customers · capacity · activity",
+          "accent": "#193560",
+          "cols": 4,
+          "kpis": [
+            {
+              "id": "d-cust",
+              "label": "Number of Customers",
+              "values": {
+                "week": "86",
+                "mtd": "172",
+                "ytd": "1,840"
+              },
+              "delta": {
+                "dir": "up",
+                "text": "across categories"
+              },
+              "rag": "green",
+              "note": "Private 115 · Heavy 57"
+            },
+            {
+              "id": "d-slots",
+              "label": "Absher Slots Available",
+              "values": {
+                "week": "2,430",
+                "mtd": "2,430",
+                "ytd": "2,430"
+              },
+              "delta": {
+                "dir": "flat",
+                "text": "bookable capacity"
+              },
+              "rag": "green",
+              "note": "Private 2,060 · Heavy 370"
+            },
+            {
+              "id": "d-addhrs",
+              "label": "Additional Hours",
+              "values": {
+                "week": "21",
+                "mtd": "40",
+                "ytd": "470"
+              },
+              "delta": {
+                "dir": "flat",
+                "text": "fail / absence"
+              },
+              "rag": "amber",
+              "note": "Private 39 · Heavy 1"
+            },
+            {
+              "id": "d-cats",
+              "label": "Active Categories",
+              "values": {
+                "week": "2 / 3",
+                "mtd": "2 / 3",
+                "ytd": "2 / 3"
+              },
+              "delta": {
+                "dir": "flat",
+                "text": "Private · Heavy Transport"
+              },
+              "rag": "green",
+              "note": "Motorcycles: no activity"
+            }
+          ]
+        }
+      ],
+      "charts": [
+        {
+          "id": "d-cat",
+          "type": "doughnut",
+          "title": "Revenue by Category",
+          "subtitle": "MTD share",
+          "valueKind": "currency",
+          "span": "half",
+          "segments": [
+            {
+              "label": "Private",
+              "value": 94875,
+              "color": "#3D8540"
+            },
+            {
+              "label": "Heavy Transport",
+              "value": 34371,
+              "color": "#193560"
+            }
+          ]
+        }
+      ],
+      "tables": []
+    }
+  ]
+}
