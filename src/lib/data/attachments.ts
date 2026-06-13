@@ -78,6 +78,46 @@ export async function uploadAttachment(
   return data;
 }
 
+/**
+ * Look up an attachment by its storage path under the caller's RLS context.
+ * Returns the row only when the per-task SELECT policy (task_attachments_select:
+ * attachments.download + task membership/read_all) allows the caller to see it,
+ * so it can gate signed-URL generation. Returns null when not visible.
+ */
+export async function getAttachmentByStoragePath(
+  path: string,
+): Promise<Pick<
+  Tables["task_attachments"]["Row"],
+  "id" | "task_id" | "uploaded_by" | "storage_path"
+> | null> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("task_attachments")
+    .select("id, task_id, uploaded_by, storage_path")
+    .eq("storage_path", path)
+    .maybeSingle();
+  return data ?? null;
+}
+
+/**
+ * Look up an attachment by id under the caller's RLS context (per-task SELECT
+ * policy). Returns null when the caller cannot see it.
+ */
+export async function getAttachmentById(
+  id: string,
+): Promise<Pick<
+  Tables["task_attachments"]["Row"],
+  "id" | "task_id" | "uploaded_by" | "storage_path"
+> | null> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("task_attachments")
+    .select("id, task_id, uploaded_by, storage_path")
+    .eq("id", id)
+    .maybeSingle();
+  return data ?? null;
+}
+
 export async function getAttachmentSignedUrl(
   path: string,
   expiresIn = 60,

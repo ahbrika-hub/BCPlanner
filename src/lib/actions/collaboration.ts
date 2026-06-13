@@ -12,6 +12,8 @@ import {
   uploadAttachment,
   deleteAttachment,
   getAttachmentSignedUrl,
+  getAttachmentByStoragePath,
+  getAttachmentById,
   MAX_ATTACHMENT_BYTES,
 } from "@/lib/data/attachments";
 import type { ActionResult } from "@/lib/actions/tasks";
@@ -146,7 +148,20 @@ export async function getAttachmentUrlAction(
   path: string,
 ): Promise<{ ok: boolean; url?: string; error?: string }> {
   try {
-    const url = await getAttachmentSignedUrl(path);
+    const profile = await getCurrentProfile();
+    if (!profile) return { ok: false, error: "Not authenticated." };
+    const permissions = await getCurrentPermissions();
+    if (!can("attachments.download", permissions))
+      return { ok: false, error: "Not authorized." };
+
+    // Storage SELECT RLS is coarse (download permission only, no per-task
+    // scoping), so verify per-task visibility here: the attachment must be
+    // readable under the caller's RLS context (task_attachments_select) before
+    // we mint a signed URL for it.
+    const attachment = await getAttachmentByStoragePath(path);
+    if (!attachment) return { ok: false, error: "Not authorized." };
+
+    const url = await getAttachmentSignedUrl(attachment.storage_path ?? path);
     if (!url)
       return { ok: false, error: "Could not generate a download link." };
     return { ok: true, url };
@@ -162,6 +177,17 @@ export async function deleteAttachmentAction(
   try {
     const profile = await getCurrentProfile();
     if (!profile) return fail("Not authenticated.");
+    const permissions = await getCurrentPermissions();
+
+    // Owner-or-manager check mirroring the task_attachments_delete RLS policy
+    // (uploaded_by = auth.uid() OR tasks.delete). The lookup itself is RLS-
+    // scoped, so an attachment the caller cannot see resolves to null.
+    const attachment = await getAttachmentById(id);
+    if (!attachment) return fail("Not authorized.");
+    const isOwner = attachment.uploaded_by === profile.id;
+    if (!isOwner && !can("tasks.delete", permissions))
+      return fail("Not authorized.");
+
     await deleteAttachment(id);
     revalidatePath(`/tasks/${taskId}`);
     return { ok: true, id: taskId };
