@@ -46,7 +46,9 @@ const kpiSchema = z.object({
 });
 
 const kpiGroupSchema = z.object({
-  num: z.number(),
+  // Badge text — the design ships zero-padded strings ("01"); legacy snapshots
+  // send a number. Accept both (rendered verbatim).
+  num: z.union([z.number(), z.string()]),
   title: z.string(),
   subtitle: z.string().optional(),
   accent: z.string().optional(),
