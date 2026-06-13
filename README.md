@@ -4,17 +4,24 @@ A clean, executive‑grade planning platform for TSS Business Consulting. This
 repository is a from‑scratch rebuild; the legacy project is used only as a
 **functional** reference.
 
-> **Status:** P1 — Repository & Tooling Foundation. The app builds and deploys,
-> but contains no Supabase wiring, authentication, or business logic yet. Those
-> arrive in later phases (P2 onward).
+> **Status:** **Live in production** at **https://bc-planner.vercel.app**. Task
+> management, role-based dashboards, analytics, and admin tooling are shipped on
+> Supabase (Postgres + Auth + Storage + RLS) with permission-based RBAC. See
+> [`docs/SYSTEM_STATE.md`](./docs/SYSTEM_STATE.md) for the authoritative
+> current-state record and [`docs/DATABASE.md`](./docs/DATABASE.md) for the data
+> layer.
 
 ## Stack
 
 - **Next.js 16** (App Router) + **React 19**
 - **TypeScript** (strict, with `noUncheckedIndexedAccess` + `noImplicitOverride`)
-- **Tailwind CSS v4** (CSS‑first `@theme` tokens)
+- **Tailwind CSS v4** (CSS‑first `@theme` tokens) + **shadcn/ui** (New York)
 - **ESLint 9** + **Prettier 3** (with `prettier-plugin-tailwindcss`)
-- **Supabase** — data/auth backend (wired in P2)
+- **Supabase** — Postgres 16 + Auth + Storage + **RLS** (RBAC via
+  `permissions`/`role_permissions`, enforced by `authorize()` in SQL and
+  `can()`/`requirePermission()` in the app)
+- **Zod 4** + **react-hook-form** (validation), **recharts** (charts)
+- **Vitest** (unit) + **Playwright** (e2e)
 - **Vercel** — hosting (project `bc-planner`, Next.js preset)
 
 ## Prerequisites
@@ -50,6 +57,9 @@ degrade gracefully (e.g. the environment badge defaults to `development`).
 | `npm run start`        | Serve the production build             |
 | `npm run lint`         | ESLint                                 |
 | `npm run typecheck`    | `tsc --noEmit` (zero‑error type check) |
+| `npm run test`         | Unit tests (Vitest)                    |
+| `npm run test:e2e`     | End‑to‑end tests (Playwright)          |
+| `npm run types:gen`    | Regenerate Supabase DB types           |
 | `npm run format`       | Format the codebase with Prettier      |
 | `npm run format:check` | Verify formatting without writing      |
 
@@ -65,8 +75,10 @@ settings.
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Public          | Supabase anon key                        |
 | `SUPABASE_SERVICE_ROLE_KEY`     | **Server‑only** | Supabase service role key                |
 | `NEXT_PUBLIC_APP_ENV`           | Public          | `development` / `staging` / `production` |
-| `EMAIL_PROVIDER_API_KEY`        | Server‑only     | Transactional email (Resend)             |
+| `EMAIL_ENABLED`                 | Server‑only     | Feature flag for transactional email     |
+| `RESEND_API_KEY`                | Server‑only     | Transactional email (Resend)             |
 | `EMAIL_FROM`                    | Server‑only     | Default From address                     |
+| `CRON_SECRET`                   | Server‑only     | Bearer token for the recurring‑task cron |
 
 > Secrets must never appear in source, logs, or commits.
 > `SUPABASE_SERVICE_ROLE_KEY` and email credentials are server‑only and must not
@@ -80,6 +92,6 @@ conventions. Key decisions are recorded in
 
 ## Branching
 
-P1 (this foundation) is committed directly to `main` to establish the baseline
-and unblock the first Vercel deploy. **From P2 onward, all work uses `feat/*`
-branches and pull requests** — `main` stays protected and always deployable.
+All work lands via pull requests into `main`; `main` stays protected and always
+deployable (Vercel auto‑deploys on merge, and migration changes auto‑apply via
+`.github/workflows/db-push-production.yml`).
