@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ChevronLeft, ChevronRight, LogOut } from "lucide-react";
+import { ChevronLeft, LogOut } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { signOut } from "@/lib/auth/actions";
@@ -46,20 +46,31 @@ export function AppSidebar() {
           collapsed && "justify-center px-2",
         )}
       >
-        {!collapsed && <BrandLockup />}
-        <Button
-          variant="ghost"
-          size="icon"
-          className={cn("size-7", !collapsed && "ml-auto")}
-          aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-          onClick={() => setCollapsed((c) => !c)}
-        >
-          {collapsed ? (
-            <ChevronRight className="size-4" />
-          ) : (
-            <ChevronLeft className="size-4" />
-          )}
-        </Button>
+        {collapsed ? (
+          // Collapsed rail: the mark doubles as the expand control (no room for
+          // a separate chevron at 64px).
+          <button
+            type="button"
+            onClick={() => setCollapsed(false)}
+            aria-label="Expand sidebar"
+            className="focus-visible:ring-ring/50 rounded-md outline-none focus-visible:ring-2"
+          >
+            <BrandLockup collapsed />
+          </button>
+        ) : (
+          <>
+            <BrandLockup />
+            <Button
+              variant="ghost"
+              size="icon"
+              className="ml-auto size-7"
+              aria-label="Collapse sidebar"
+              onClick={() => setCollapsed(true)}
+            >
+              <ChevronLeft className="size-4" />
+            </Button>
+          </>
+        )}
       </div>
 
       {/* Nav */}
