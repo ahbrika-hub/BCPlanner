@@ -171,3 +171,32 @@ export function getAvailableActions(
     (a) => a.from.includes(status) && can(a.permission, permissions),
   );
 }
+
+/** Transition actions that make sense to run in bulk on the queues. */
+export const BULK_ACTIONS: readonly TaskAction[] = [
+  "approve",
+  "reject",
+  "return",
+  "close",
+  "cancel",
+];
+
+/** Cap on how many tasks one bulk action may touch (guards mass changes). */
+export const BULK_SELECTION_CAP = 100;
+
+/**
+ * Bulk actions offered for a queue of a single status — the intersection of the
+ * available single-task actions and {@link BULK_ACTIONS}. Eligibility/legality
+ * is still re-checked per task by the single-task action + DB guard at run time.
+ */
+export function bulkActionsFor(
+  status: TaskStatus,
+  permissions: string[],
+): ActionDescriptor[] {
+  return ACTIONS.filter(
+    (a) =>
+      BULK_ACTIONS.includes(a.action) &&
+      a.from.includes(status) &&
+      can(a.permission, permissions),
+  );
+}
