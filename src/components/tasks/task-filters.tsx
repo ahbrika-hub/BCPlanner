@@ -1,8 +1,10 @@
 "use client";
 
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
-import { Search, X } from "lucide-react";
+import { Search, X, AlertTriangle, ChevronDown } from "lucide-react";
 
+import { cn } from "@/lib/utils";
+import { TASK_STATUSES, TASK_STATUS_LABELS } from "@/lib/tasks/status";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
@@ -12,67 +14,110 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
-const STATUSES = [
-  "draft",
-  "pending_approval",
-  "approved",
-  "assigned",
-  "in_progress",
-  "pending_update",
-  "pending_review",
-  "completed",
-  "rejected",
-  "returned_for_modification",
-  "cancelled",
-  "reopened",
-];
-
+// URL-persisted server filters: full-text search (q), multi-status, derived
+// overdue toggle, and priority. Changing any of these re-runs the server fetch
+// (listTasks). Assignee / business-line / sort live in TasksTable (client-side,
+// also URL-persisted). A change here pushes a new URL; the shared params mean
+// every control round-trips through the address bar.
 export function TaskFilters() {
   const router = useRouter();
   const pathname = usePathname();
   const params = useSearchParams();
 
+  const pushParams = (next: URLSearchParams) => {
+    const qs = next.toString();
+    router.push(qs ? `${pathname}?${qs}` : pathname);
+  };
+
   const setParam = (key: string, value: string | null) => {
     const next = new URLSearchParams(params.toString());
     if (value && value !== "all") next.set(key, value);
     else next.delete(key);
-    router.push(`${pathname}?${next.toString()}`);
+    pushParams(next);
   };
 
-  const hasFilters = ["status", "priority", "q"].some((k) => params.get(k));
+  const selectedStatuses = (params.get("status") ?? "")
+    .split(",")
+    .filter(Boolean);
+
+  const toggleStatus = (status: string, checked: boolean) => {
+    const set = new Set(selectedStatuses);
+    if (checked) set.add(status);
+    else set.delete(status);
+    const next = new URLSearchParams(params.toString());
+    if (set.size > 0) next.set("status", [...set].join(","));
+    else next.delete("status");
+    pushParams(next);
+  };
+
+  const overdue = params.get("overdue") === "1";
+  const toggleOverdue = () => setParam("overdue", overdue ? null : "1");
+
+  const hasFilters = ["status", "priority", "q", "overdue"].some((k) =>
+    params.get(k),
+  );
 
   return (
     <div className="mb-4 flex flex-wrap items-center gap-2">
       <div className="relative">
         <Search className="text-muted-foreground absolute top-2.5 left-2.5 size-4" />
         <Input
-          placeholder="Search title or task no…"
+          placeholder="Search title, task no, or description…"
           defaultValue={params.get("q") ?? ""}
-          className="w-56 pl-8"
+          className="w-64 pl-8"
           onKeyDown={(e) => {
             if (e.key === "Enter")
-              setParam("q", (e.target as HTMLInputElement).value);
+              setParam("q", (e.target as HTMLInputElement).value.trim());
           }}
         />
       </div>
 
-      <Select
-        value={params.get("status") ?? "all"}
-        onValueChange={(v) => setParam("status", v)}
-      >
-        <SelectTrigger className="w-44">
-          <SelectValue placeholder="Status" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="all">All statuses</SelectItem>
-          {STATUSES.map((s) => (
-            <SelectItem key={s} value={s}>
-              {s.replace(/_/g, " ")}
-            </SelectItem>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="outline" className="min-w-40 justify-between">
+            {selectedStatuses.length > 0
+              ? `${selectedStatuses.length} status${selectedStatuses.length > 1 ? "es" : ""}`
+              : "All statuses"}
+            <ChevronDown className="size-4 opacity-60" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="start" className="max-h-80 overflow-y-auto">
+          <DropdownMenuLabel>Filter by status</DropdownMenuLabel>
+          <DropdownMenuSeparator />
+          {TASK_STATUSES.map((s) => (
+            <DropdownMenuCheckboxItem
+              key={s}
+              checked={selectedStatuses.includes(s)}
+              onCheckedChange={(checked) => toggleStatus(s, checked === true)}
+              onSelect={(e) => e.preventDefault()}
+            >
+              {TASK_STATUS_LABELS[s]}
+            </DropdownMenuCheckboxItem>
           ))}
-        </SelectContent>
-      </Select>
+        </DropdownMenuContent>
+      </DropdownMenu>
+
+      <Button
+        type="button"
+        variant={overdue ? "default" : "outline"}
+        onClick={toggleOverdue}
+        aria-pressed={overdue}
+        className={cn(
+          overdue && "bg-destructive hover:bg-destructive/90 text-white",
+        )}
+      >
+        <AlertTriangle className="size-4" />
+        Overdue
+      </Button>
 
       <Select
         value={params.get("priority") ?? "all"}
