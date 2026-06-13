@@ -50,6 +50,12 @@ export async function createTaskAction(values: unknown): Promise<ActionResult> {
       parsed.data.task_category === "project"
         ? (parsed.data.project_id ?? null)
         : null;
+    // Never attach an inactive project — mirrors the edit path's server-side
+    // rule (the create form's picker only lists active projects, but a direct
+    // action call must be guarded too).
+    if (project_id && !(await isActiveProject(project_id))) {
+      return fail("Select an active project.");
+    }
     const task = await createTask({
       ...parsed.data,
       project_id,
