@@ -8,13 +8,16 @@ export type CommentType = Database["public"]["Enums"]["comment_type_enum"];
 export type NotificationType = Database["public"]["Enums"]["notification_type"];
 
 type ProfileRef = { id: string; full_name: string } | null;
+// The creator ref also carries role so surfaces can detect a "CEO request"
+// (created_by role = ceo) without an extra query.
+type CreatorRef = { id: string; full_name: string; role: UserRole } | null;
 type BusinessLineRef = { id: string; name: string } | null;
 
 export type TaskRow = Tables["tasks"]["Row"];
 
 export type TaskWithRelations = TaskRow & {
   assignee: ProfileRef;
-  creator: ProfileRef;
+  creator: CreatorRef;
   approver: ProfileRef;
   business_line: BusinessLineRef;
   project: { id: string; name: string } | null;

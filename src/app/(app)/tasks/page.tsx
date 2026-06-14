@@ -11,6 +11,7 @@ import { PageHeader } from "@/components/layout/page-header";
 import { TaskFilters } from "@/components/tasks/task-filters";
 import { TasksTable } from "@/components/tasks/tasks-table";
 import { NewTaskDialog } from "@/components/tasks/new-task-dialog";
+import { RequestTaskDialog } from "@/components/tasks/request-task-dialog";
 
 export default async function TasksPage({
   searchParams,
@@ -63,7 +64,10 @@ export default async function TasksPage({
         title="Tasks"
         subtitle="Create, track, and manage tasks"
         actions={
-          can("tasks.create", permissions) ? (
+          profile?.role === "ceo" ? (
+            // CEO gets the lightweight "Request a task" entry, not the full form.
+            <RequestTaskDialog />
+          ) : can("tasks.create", permissions) ? (
             <NewTaskDialog
               businessLines={businessLines}
               users={users}

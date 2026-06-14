@@ -13,3 +13,17 @@ export async function listBusinessLines(): Promise<BusinessLineRow[]> {
   if (error) throw new Error(error.message);
   return data ?? [];
 }
+
+/**
+ * Id of the catch-all "General" business line, used as the default for a CEO
+ * lightweight task request (the column is nullable, so a miss is non-fatal).
+ */
+export async function getGeneralBusinessLineId(): Promise<string | null> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("business_lines")
+    .select("id")
+    .eq("name", "General")
+    .maybeSingle();
+  return data?.id ?? null;
+}
