@@ -14,7 +14,7 @@ import { PageHeader } from "@/components/layout/page-header";
 import { TaskFilters } from "@/components/tasks/task-filters";
 import { TasksTable } from "@/components/tasks/tasks-table";
 import { CeoTasksView } from "@/components/tasks/ceo-tasks-view";
-import { NewTaskDialog } from "@/components/tasks/new-task-dialog";
+import { NewTaskDialogLazy } from "@/components/tasks/new-task-dialog-lazy";
 import { RequestTaskDialog } from "@/components/tasks/request-task-dialog";
 
 export default async function TasksPage({
@@ -86,7 +86,7 @@ export default async function TasksPage({
         subtitle="Create, track, and manage tasks"
         actions={
           can("tasks.create", permissions) ? (
-            <NewTaskDialog
+            <NewTaskDialogLazy
               businessLines={businessLines}
               users={users}
               projects={projects}
