@@ -1,13 +1,27 @@
 "use client";
 
 import { useState } from "react";
+import dynamic from "next/dynamic";
 
-import {
-  StatusDistributionChart,
-  type StatusDatum,
-} from "@/components/charts/status-distribution-chart";
+import type { StatusDatum } from "@/components/charts/status-distribution-chart";
 import { DrilldownDialog } from "@/components/dashboard/drilldown-dialog";
+import { Skeleton } from "@/components/ui/skeleton";
 import type { TaskStatus } from "@/lib/data/types";
+
+// Lazy-load the Recharts donut (ssr:false) so Recharts is code-split out of the
+// dashboard's initial bundle; the skeleton matches the donut's square footprint.
+const StatusDistributionChart = dynamic(
+  () =>
+    import("@/components/charts/status-distribution-chart").then(
+      (m) => m.StatusDistributionChart,
+    ),
+  {
+    ssr: false,
+    loading: () => (
+      <Skeleton className="mx-auto aspect-square max-h-72 w-full rounded-md" />
+    ),
+  },
+);
 
 const humanize = (s: string) =>
   s.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());

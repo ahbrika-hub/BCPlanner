@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import dynamic from "next/dynamic";
 
 import type {
   DashboardData,
@@ -9,7 +10,21 @@ import type {
 } from "@/lib/validations/dashboard";
 import { cn } from "@/lib/utils";
 import { arrow } from "@/lib/dashboard/format";
-import { WeeklyChart } from "@/components/dashboard/weekly/weekly-chart";
+import { Skeleton } from "@/components/ui/skeleton";
+
+// Lazy-load the Recharts weekly chart (ssr:false) so Recharts is code-split out
+// of the weekly dashboard's initial bundle; KPI tiles/tables paint immediately
+// and each chart fills in behind a height-matched skeleton (no layout shift).
+const WeeklyChart = dynamic(
+  () =>
+    import("@/components/dashboard/weekly/weekly-chart").then(
+      (m) => m.WeeklyChart,
+    ),
+  {
+    ssr: false,
+    loading: () => <Skeleton className="h-[260px] w-full rounded-md" />,
+  },
+);
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 

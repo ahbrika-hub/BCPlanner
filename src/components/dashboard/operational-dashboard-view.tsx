@@ -20,7 +20,8 @@ import { TokenPill } from "@/components/ui/token-pill";
 import { TaskTable } from "@/components/dashboard/task-table";
 import { DrilldownKpi } from "@/components/dashboard/drilldown-kpi";
 import { StatusDistributionDrilldown } from "@/components/dashboard/status-distribution-drilldown";
-import { TasksOverTimeChart } from "@/components/charts/tasks-over-time-chart";
+import dynamic from "next/dynamic";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Card,
   CardAction,
@@ -30,6 +31,22 @@ import {
 } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Button } from "@/components/ui/button";
+
+// Lazy-load Recharts (the trend chart) so it's code-split out of the dashboard's
+// initial bundle; the status donut is lazied inside StatusDistributionDrilldown.
+// Skeleton matches the chart height to avoid layout shift. Output is unchanged.
+const TasksOverTimeChart = dynamic(
+  () =>
+    import("@/components/charts/tasks-over-time-chart").then(
+      (m) => m.TasksOverTimeChart,
+    ),
+  {
+    ssr: false,
+    loading: () => (
+      <Skeleton className="aspect-video max-h-64 w-full rounded-md" />
+    ),
+  },
+);
 
 export type OperationalDashboardData = {
   stats: Awaited<ReturnType<typeof getDashboardStats>>;
