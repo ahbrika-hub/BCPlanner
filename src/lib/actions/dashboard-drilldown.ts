@@ -2,12 +2,21 @@
 
 import { listTasks } from "@/lib/data/tasks";
 import { getOverdueTasks } from "@/lib/data/analytics";
+import { getCurrentProfile } from "@/lib/auth/session";
 import type { TaskStatus } from "@/lib/data/types";
 
 /**
  * Read-only drill-down for the Department dashboard. Reuses the existing
  * RLS-scoped read functions (listTasks / getOverdueTasks) — no new query
  * surface, no widening of access. Returns a slim row shape for the popup list.
+ *
+ * Role-scoped at this trust boundary (a UI gate alone is bypassable):
+ *   • ceo               → NO drill-down: the executive view is a read-only
+ *                         overview, so individual task details are never exposed
+ *                         here even though the CEO holds tasks.read_all.
+ *   • employee          → only their OWN tasks (RLS already restricts them, since
+ *                         they lack tasks.read_all; we also scope explicitly).
+ *   • section_head/admin → any task (current behaviour; relies on tasks.read_all).
  */
 
 export type DrilldownTask = {
@@ -55,20 +64,33 @@ const slim = (
 export async function fetchDrilldownTasks(
   key: DrilldownKey,
 ): Promise<DrilldownTask[]> {
+  const profile = await getCurrentProfile();
+  if (!profile) return [];
+  // The CEO has no task-detail drill-down on the dashboard.
+  if (profile.role === "ceo") return [];
+
+  // Employees may only see their OWN tasks. RLS already enforces this (they lack
+  // tasks.read_all), but scope the queries explicitly as defence-in-depth.
+  const ownId = profile.role === "employee" ? profile.id : undefined;
+
   if (key.kind === "overdue") {
-    return slim(await getOverdueTasks(50));
+    const rows = await getOverdueTasks(50);
+    return slim(ownId ? rows.filter((t) => t.assignee_id === ownId) : rows);
   }
   if (key.kind === "active") {
-    return slim(await listTasks({ status: ACTIVE_STATUSES }));
+    return slim(
+      await listTasks({ status: ACTIVE_STATUSES, assignee_id: ownId }),
+    );
   }
   if (key.kind === "assignee-active") {
     // The active tasks behind one employee's workload (RLS-scoped to the viewer).
+    // An employee can only ever target themselves.
     return slim(
       await listTasks({
         status: ACTIVE_STATUSES,
-        assignee_id: key.assigneeId,
+        assignee_id: ownId ?? key.assigneeId,
       }),
     );
   }
-  return slim(await listTasks({ status: [key.status] }));
+  return slim(await listTasks({ status: [key.status], assignee_id: ownId }));
 }
