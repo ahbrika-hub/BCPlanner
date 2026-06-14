@@ -14,9 +14,8 @@ import type {
   getCompletionTrend,
 } from "@/lib/data/analytics";
 import { KpiCard } from "@/components/ui/kpi-card";
-import { StatusDistributionChart } from "@/components/charts/status-distribution-chart";
-import { BarComparisonChart } from "@/components/charts/bar-comparison-chart";
-import { TasksOverTimeChart } from "@/components/charts/tasks-over-time-chart";
+import dynamic from "next/dynamic";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Card,
   CardContent,
@@ -24,6 +23,47 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+
+// Charts are the only Recharts consumers here — load them lazily (ssr:false) so
+// Recharts is code-split out of the dashboard's initial bundle. KPI cards and
+// tables keep rendering immediately; each chart fills in behind a skeleton sized
+// to the chart so there's no layout shift. Output/series/colours are unchanged.
+const StatusDistributionChart = dynamic(
+  () =>
+    import("@/components/charts/status-distribution-chart").then(
+      (m) => m.StatusDistributionChart,
+    ),
+  {
+    ssr: false,
+    loading: () => (
+      <Skeleton className="mx-auto aspect-square max-h-72 w-full rounded-md" />
+    ),
+  },
+);
+const BarComparisonChart = dynamic(
+  () =>
+    import("@/components/charts/bar-comparison-chart").then(
+      (m) => m.BarComparisonChart,
+    ),
+  {
+    ssr: false,
+    loading: () => (
+      <Skeleton className="aspect-video max-h-72 w-full rounded-md" />
+    ),
+  },
+);
+const TasksOverTimeChart = dynamic(
+  () =>
+    import("@/components/charts/tasks-over-time-chart").then(
+      (m) => m.TasksOverTimeChart,
+    ),
+  {
+    ssr: false,
+    loading: () => (
+      <Skeleton className="aspect-video max-h-64 w-full rounded-md" />
+    ),
+  },
+);
 
 export type ExecutiveDashboardData = {
   stats: Awaited<ReturnType<typeof getDashboardStats>>;
