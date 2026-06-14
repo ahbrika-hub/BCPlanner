@@ -43,8 +43,13 @@ export async function createTaskAction(values: unknown): Promise<ActionResult> {
     const permissions = await getCurrentPermissions();
     if (!can("tasks.create", permissions)) return fail("Not authorized.");
 
+    // employee + ceo create tasks that must be approved & assigned by a manager
+    // (the task lands pending_approval, unassigned). section_head/admin create
+    // tasks that are immediately actionable.
     const status =
-      profile.role === "employee" ? "pending_approval" : "assigned";
+      profile.role === "section_head" || profile.role === "admin"
+        ? "assigned"
+        : "pending_approval";
     // A project is linked only for project-type tasks (also enforced by the DB
     // check constraint); never leak a stale project_id onto a department task.
     const project_id =
@@ -66,18 +71,18 @@ export async function createTaskAction(values: unknown): Promise<ActionResult> {
 
     if (status === "pending_approval") {
       const supabase = await createClient();
-      await supabase.rpc("notify_role", {
-        p_role: "section_head",
-        p_type: "task_assigned",
-        p_title: "Task pending approval",
-        p_message: `${task.task_no ?? "Task"}: ${task.title}`,
-        p_task_id: task.id,
-      });
-      await emailRole(
-        "pending_approval",
-        "section_head",
-        `${task.task_no ?? "Task"}: ${task.title}`,
-      );
+      const ref = `${task.task_no ?? "Task"}: ${task.title}`;
+      // Notify everyone who can approve/assign — section_head AND admin.
+      for (const role of ["section_head", "admin"] as const) {
+        await supabase.rpc("notify_role", {
+          p_role: role,
+          p_type: "task_assigned",
+          p_title: "Task pending approval",
+          p_message: ref,
+          p_task_id: task.id,
+        });
+        await emailRole("pending_approval", role, ref);
+      }
     }
 
     revalidatePath("/tasks");
@@ -236,6 +241,7 @@ async function notifyForTransition(
     title: string;
     created_by: string;
     assignee_id: string | null;
+    category: string | null;
   },
   payload: TransitionPayload,
 ): Promise<void> {
@@ -277,6 +283,10 @@ async function notifyForTransition(
         "Task assigned to you",
       );
       await emailUsers("task_assigned", [payload.assignee_id ?? null], ref);
+      // Loop the creator in (e.g. a CEO who started the task) on assignment.
+      if (task.created_by && task.created_by !== payload.assignee_id) {
+        await notify(task.created_by, "task_assigned", "Your task was assigned");
+      }
       break;
     case "submit_review":
       await supabase.rpc("notify_role", {
@@ -289,7 +299,15 @@ async function notifyForTransition(
       await emailRole("pending_review", "section_head", ref);
       break;
     case "close":
-      await notify(task.created_by, "task_completed", "Task completed");
+      // A completed "Dashboard Update" task means the snapshot the requester
+      // (recorded as created_by) asked for is now live — tell them so.
+      await notify(
+        task.created_by,
+        "task_completed",
+        task.category === DASHBOARD_UPLOAD_CATEGORY
+          ? "Requested dashboard update is live"
+          : "Task completed",
+      );
       await notify(task.assignee_id, "task_completed", "Task completed");
       await emailUsers("completed", [task.created_by, task.assignee_id], ref);
       break;

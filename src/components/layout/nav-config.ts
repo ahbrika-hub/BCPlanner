@@ -60,7 +60,10 @@ export const navSections: NavSection[] = [
         label: "Tasks",
         href: "/tasks",
         icon: ListTodo,
-        permission: "tasks.read",
+        // any-of: tasks.read (employee/section_head/admin) OR tasks.create — the
+        // latter surfaces the create-task entry for the CEO (who has tasks.create
+        // + tasks.read_all but not tasks.read).
+        permission: ["tasks.read", "tasks.create"],
       },
       {
         label: "Approvals",
