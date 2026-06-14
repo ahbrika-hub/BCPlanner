@@ -1,98 +1,96 @@
 -- ============================================================================
 -- TSS Planner — TEST TEARDOWN  (supabase/sample-data/full-test-teardown.sql)
 -- ----------------------------------------------------------------------------
--- Removes EVERYTHING created by full-test-seed.sql in proven FK-safe child→parent
--- order, in ONE transaction (any error rolls the whole thing back). Idempotent:
--- safe to run twice.
+-- MARKER-ONLY · USER-PRESERVING. Removes EVERYTHING created by full-test-seed.sql
+-- and NOTHING else, in proven FK-safe child→parent order, in ONE transaction
+-- (any error rolls the whole thing back). Idempotent: safe to run twice.
 --
--- SAFETY: the five @tss.test users are throwaway and are fully deleted (profiles
--- + auth). The admin account (tss.bc2026@gmail.com) is your REAL account — it is
--- NEVER deleted, and admin-authored test rows are removed ONLY by their markers
--- ('[TEST]' titles/names, raw_file_path='test-seed'), never by "authored by admin"
--- (so your real data is untouched). Reference data (business_lines, permissions,
--- role_permissions, app_settings, departments) is never touched.
+-- CRITICAL SAFETY: the six attributed accounts are REAL users that may carry
+-- REAL data. This script:
+--   • deletes ONLY rows carrying a seed marker — never by user id;
+--       tasks / projects / templates  → '[TEST] ' title/name prefix
+--       recurring_tasks               → '[TEST] ' title prefix
+--       notifications                 → '[TEST] ' title prefix
+--       performance_evaluations       → '[TEST] ' evaluation_notes prefix
+--       dashboard_snapshots           → raw_file_path = 'test-seed'
+--       task_updates / task_comments / task_attachments → scoped via their
+--         '[TEST] ' parent task ONLY (these tables have no own marker field)
+--   • NEVER deletes from public.profiles or auth.users — no user is removed;
+--   • NEVER touches audit_logs (immutable history; not seeded);
+--   • NEVER touches reference data (business_lines, permissions,
+--     role_permissions, app_settings, departments).
+-- A user's REAL (non-marked) tasks, notifications, evaluations, comments, etc.
+-- are therefore left completely untouched.
 -- ============================================================================
 
 begin;
 
--- Throwaway test users to DELETE (the 5 @tss.test only — NOT the admin gmail).
-create temp table _tu5 on commit drop as
-  select id from public.profiles
-  where email in ('sectionhead@tss.test','employee1@tss.test',
-                  'employee2@tss.test','employee3@tss.test','ceo@tss.test');
-
--- Test tasks = '[TEST]'-marked, or created_by/assigned to a throwaway test user.
+-- The set of test tasks = '[TEST] '-titled tasks ONLY (marker, never user id).
 create temp table _tt on commit drop as
-  select id from public.tasks
-  where title like '[TEST]%'
-     or created_by in (select id from _tu5)
-     or assignee_id in (select id from _tu5);
+  select id from public.tasks where title like '[TEST]%';
 
 -- ── child → parent ──────────────────────────────────────────────────────────
+-- Children of test tasks: scope STRICTLY by the '[TEST]' parent task id, so a
+-- real comment/update/attachment on a real task is never removed.
 delete from public.task_attachments where task_id in (select id from _tt);
-delete from public.task_comments     where task_id in (select id from _tt)
-                                         or author_id in (select id from _tu5)
-                                         or addressed_by in (select id from _tu5);
-delete from public.task_updates       where task_id in (select id from _tt)
-                                         or updated_by in (select id from _tu5);
+delete from public.task_comments     where task_id in (select id from _tt);
+delete from public.task_updates       where task_id in (select id from _tt);
 
--- notifications: throwaway users' rows, [TEST]-marked rows, and any on a test task.
-delete from public.notifications      where user_id in (select id from _tu5)
-                                         or task_id in (select id from _tt)
-                                         or title like '[TEST]%';
+-- notifications: marker-titled rows only (real notifications are untouched).
+-- Note: notifications.task_id is ON DELETE CASCADE, but we delete by marker
+-- here so a real notification can never ride along on a test task.
+delete from public.notifications where title like '[TEST]%';
 
--- performance evaluations: throwaway employees + [TEST]-noted (admin may be the
--- evaluator, so scope by employee/notes — never delete by evaluated_by=admin).
-delete from public.performance_evaluations
-   where employee_id in (select id from _tu5)
-      or evaluation_notes like '[TEST]%';
+-- performance evaluations: marker-noted rows only (the evaluator may be a real
+-- user — admin/section_head — so we NEVER scope by evaluated_by/employee_id).
+delete from public.performance_evaluations where evaluation_notes like '[TEST]%';
 
-delete from public.recurring_tasks    where title like '[TEST]%'
-                                         or created_by in (select id from _tu5)
-                                         or assignee_id in (select id from _tu5);
+-- dashboard_snapshots: the test-seed marker only (uploaded_by is the real admin,
+-- so we NEVER scope by uploaded_by). task_id is ON DELETE SET NULL, harmless.
+delete from public.dashboard_snapshots where raw_file_path = 'test-seed';
 
--- dashboard_snapshots: ONLY the test seed marker / test tasks (uploaded_by may be
--- the real admin, so never scope by uploaded_by).
-delete from public.dashboard_snapshots where raw_file_path = 'test-seed'
-                                         or task_id in (select id from _tt);
+-- recurring tasks: marker-titled only.
+delete from public.recurring_tasks where title like '[TEST]%';
 
--- audit_logs aren't seeded; clear only those a throwaway test user generated.
-delete from public.audit_logs         where actor_id in (select id from _tu5);
+-- task templates: marker-named only (creator is the real admin). No FK from
+-- tasks → task_templates, so order is flexible; kept before tasks by convention.
+delete from public.task_templates where name like '[TEST]%';
 
-delete from public.tasks              where id in (select id from _tt);
+-- now the test tasks themselves (children already gone).
+delete from public.tasks where id in (select id from _tt);
 
--- templates / projects: marker-only (admin may be the creator).
-delete from public.task_templates     where name like '[TEST]%';
-delete from public.projects           where name like '[TEST]%';
+-- projects: marker-named only (creator may be a real user).
+delete from public.projects where name like '[TEST]%';
 
--- Finally the throwaway profiles, then their auth users (profiles.id -> auth.users).
-delete from public.profiles           where id in (select id from _tu5);
-delete from auth.users
-   where email in ('sectionhead@tss.test','employee1@tss.test',
-                   'employee2@tss.test','employee3@tss.test','ceo@tss.test');
+-- NOTE: public.profiles and auth.users are intentionally NEVER touched here.
+-- NOTE: public.audit_logs is intentionally NEVER touched here.
 
--- ── Verification: zero remaining test rows + reference tables intact ────────
-select '== remaining test rows (expect all 0) ==' as section;
-select 'tasks[TEST]'      o, count(*) n from public.tasks where title like '[TEST]%'
-union all select 'projects[TEST]',      count(*) from public.projects where name like '[TEST]%'
-union all select 'templates[TEST]',     count(*) from public.task_templates where name like '[TEST]%'
-union all select 'recurring[TEST]',     count(*) from public.recurring_tasks where title like '[TEST]%'
-union all select 'snapshots[test-seed]',count(*) from public.dashboard_snapshots where raw_file_path='test-seed'
-union all select 'notifications[TEST]', count(*) from public.notifications where title like '[TEST]%'
-union all select 'perf_evals[TEST]',    count(*) from public.performance_evaluations where evaluation_notes like '[TEST]%'
-union all select 'throwaway_profiles',  count(*) from public.profiles where email in
-   ('sectionhead@tss.test','employee1@tss.test','employee2@tss.test','employee3@tss.test','ceo@tss.test')
-union all select 'throwaway_auth_users',count(*) from auth.users where email in
-   ('sectionhead@tss.test','employee1@tss.test','employee2@tss.test','employee3@tss.test','ceo@tss.test')
+-- ── Verification A: zero remaining MARKED rows (expect every count 0) ───────
+select '== remaining marked test rows (expect all 0) ==' as section;
+select 'tasks[TEST]'       o, count(*) n from public.tasks where title like '[TEST]%'
+union all select 'projects[TEST]',       count(*) from public.projects where name like '[TEST]%'
+union all select 'templates[TEST]',      count(*) from public.task_templates where name like '[TEST]%'
+union all select 'recurring[TEST]',      count(*) from public.recurring_tasks where title like '[TEST]%'
+union all select 'snapshots[test-seed]', count(*) from public.dashboard_snapshots where raw_file_path='test-seed'
+union all select 'notifications[TEST]',  count(*) from public.notifications where title like '[TEST]%'
+union all select 'perf_evals[TEST]',     count(*) from public.performance_evaluations where evaluation_notes like '[TEST]%'
+union all select 'updates_on_test',      count(*) from public.task_updates u join public.tasks t on t.id=u.task_id where t.title like '[TEST]%'
+union all select 'comments_on_test',     count(*) from public.task_comments c join public.tasks t on t.id=c.task_id where t.title like '[TEST]%'
 order by o;
 
-select '== admin account preserved (expect 1) + reference tables UNTOUCHED ==' as section;
-select 'admin_profile'    o, count(*) n from public.profiles where email='tss.bc2026@gmail.com'
-union all select 'business_lines',   count(*) from public.business_lines
-union all select 'permissions',      count(*) from public.permissions
-union all select 'role_permissions', count(*) from public.role_permissions
-union all select 'departments',      count(*) from public.departments
-union all select 'app_settings',     count(*) from public.app_settings
+-- ── Verification B: all SIX real users still exist (expect found=6) ─────────
+select '== real users preserved (expect found=6) + reference tables UNTOUCHED ==' as section;
+select 'real_users_found' o, count(*)::text n from public.profiles where email in
+   ('tss.bc2026@gmail.com','brikaam@saptco.com.sa','alzahranika@saptco.com.sa',
+    'aldosarimb@saptco.com.sa','abdullahqo@saptco.com.sa','alsuhalirf@saptco.com.sa')
+union all select 'auth_users_found', count(*)::text from auth.users where email in
+   ('tss.bc2026@gmail.com','brikaam@saptco.com.sa','alzahranika@saptco.com.sa',
+    'aldosarimb@saptco.com.sa','abdullahqo@saptco.com.sa','alsuhalirf@saptco.com.sa')
+union all select 'business_lines',   count(*)::text from public.business_lines
+union all select 'permissions',      count(*)::text from public.permissions
+union all select 'role_permissions', count(*)::text from public.role_permissions
+union all select 'departments',      count(*)::text from public.departments
+union all select 'app_settings',     count(*)::text from public.app_settings
 order by o;
 
 commit;
