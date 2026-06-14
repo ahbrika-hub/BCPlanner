@@ -3,16 +3,32 @@ import { z } from "zod";
 import { userRoleSchema } from "./users";
 
 /**
- * Domains permitted to self-register. The DB (`app_settings.signup_allowed_domains`
- * + handle_new_user) is the authoritative source; this constant is the
- * client/server-action layer of the same policy (app_settings is not readable by
- * the anonymous signup context).
+ * Self-registration allow-list. Each entry is either a DOMAIN (match the email's
+ * domain portion) or a FULL EMAIL when it contains '@' (match the whole address)
+ * — so a specific gmail is allowed without opening the entire gmail.com domain.
+ * The DB (`app_settings.signup_allowed_domains` + handle_new_user) is the
+ * authoritative source; this constant mirrors it for the anonymous signup
+ * context (app_settings is not readable there). Keep the two in sync.
  */
-export const ALLOWED_SIGNUP_DOMAINS = ["saptco.com", "tss.test"] as const;
+export const ALLOWED_SIGNUP_ENTRIES = [
+  "saptco.com.sa",
+  "tss.bc2026@gmail.com",
+  "ahbrika@gmail.com",
+] as const;
 
-export function isAllowedSignupDomain(email: string): boolean {
-  const domain = email.trim().toLowerCase().split("@")[1] ?? "";
-  return (ALLOWED_SIGNUP_DOMAINS as readonly string[]).includes(domain);
+export function isAllowedSignupEmail(email: string): boolean {
+  const e = email.trim().toLowerCase();
+  const domain = e.split("@")[1] ?? "";
+  return (ALLOWED_SIGNUP_ENTRIES as readonly string[]).some((entry) =>
+    entry.includes("@") ? e === entry : domain === entry,
+  );
+}
+
+/** Human-readable allow-list for hints/errors (domains shown as "@domain"). */
+export function signupAllowlistLabel(): string {
+  return ALLOWED_SIGNUP_ENTRIES.map((e) =>
+    e.includes("@") ? e : `@${e}`,
+  ).join(", ");
 }
 
 export const signupSchema = z
@@ -22,8 +38,8 @@ export const signupSchema = z
       .email("Enter a valid email address")
       .trim()
       .toLowerCase()
-      .refine(isAllowedSignupDomain, {
-        message: `Registration is limited to ${ALLOWED_SIGNUP_DOMAINS.map((d) => "@" + d).join(", ")} addresses.`,
+      .refine(isAllowedSignupEmail, {
+        message: `Registration is limited to ${signupAllowlistLabel()}.`,
       }),
     password: z
       .string()
