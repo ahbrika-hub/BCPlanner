@@ -14,35 +14,36 @@ Manual, role-by-role acceptance plan, paired with the **seed**
 
 ## 0 · One-time setup (you run these)
 
-### 0.1 Create the test users
-1. **Widen the allow-list** (SQL editor):
-   ```sql
-   update public.app_settings set value =
-     'saptco.com.sa,tss.bc2026@gmail.com,ahbrika@gmail.com,tss.test'
-     where key='signup_allowed_domains';
-   ```
-2. **Authentication → Add User** (✅ **Auto Confirm User**, password `Test1234!`) — *not* Invite
-   (invite hits an email rate limit; auto-confirm needs no email):
-   `sectionhead@tss.test`, `employee1@tss.test`, `employee2@tss.test`,
-   `employee3@tss.test`, `ceo@tss.test`. **admin = your real `tss.bc2026@gmail.com`.**
-3. **Restore the locked allow-list**:
-   ```sql
-   update public.app_settings set value =
-     'saptco.com.sa,tss.bc2026@gmail.com,ahbrika@gmail.com'
-     where key='signup_allowed_domains';
-   ```
-   (Users persist after narrowing — `handle_new_user` fires on insert only.)
+### 0.1 The six REAL accounts (no users are created)
+This harness attributes its data to **six existing real users**, resolved by
+email. You do **not** create any user and the seed **never** alters a profile
+(no role / `account_status` / `is_active` changes). Log in with each user's own
+real password.
+
+| Role | Email | Name |
+|---|---|---|
+| **admin** | `tss.bc2026@gmail.com` | — |
+| **section_head** | `brikaam@saptco.com.sa` | Ahmed Brika |
+| **ceo** | `alzahranika@saptco.com.sa` | Khalid Alzahrani |
+| **employee #1** | `aldosarimb@saptco.com.sa` | meshari |
+| **employee #2** | `abdullahqo@saptco.com.sa` | Qutuf |
+| **employee #3** | `alsuhalirf@saptco.com.sa` | Reyouf |
+
+> These accounts must already exist with the roles above. No allow-list change
+> and no `Add User` step is needed. If any of the six is missing, the seed
+> **aborts loudly** (it never creates users or mis-attributes data).
 
 ### 0.2 Seed
-Run `full-test-seed.sql` in the SQL editor. It sets the six profiles' role +
-`account_status='active'` + `is_active=true`, then loads the tagged data. The
-final SELECTs must show **4 tasks per month Jan→Jun**, **12 distinct statuses**,
-**12 overdue**, and the row counts (24 tasks, 3 projects, 2 templates, 5 updates,
-4 comments, 2 recurring, 9 perf-evals, 6 notifications, 1 snapshot).
+Run `full-test-seed.sql` in the SQL editor. It resolves the six emails (guards
+that **all six** exist), then loads only **marker-tagged** data — no profile is
+touched. The final SELECTs must show **4 tasks per month Jan→Jun**, **12 distinct
+statuses**, **12 overdue**, and the row counts (24 tasks, 3 projects, 2 templates,
+5 updates, 4 comments, 2 recurring, 9 perf-evals, 6 notifications, 1 snapshot).
 
 ### 0.3 Login matrix
-Sign in at `/login` with each account (`Test1234!`). Login requires
-`is_active=true AND account_status='active'` (the seed sets both).
+Sign in at `/login` with each of the six accounts using its **real password**.
+(The seed does not change credentials or `account_status`/`is_active`; these are
+live accounts.)
 
 ### 0.4 What is **manual** (cannot be seeded)
 - **Task attachments** and the **weekly `.xlsx` upload** — need Storage files.
@@ -64,12 +65,12 @@ Sign in at `/login` with each account (`Test1234!`). Login requires
 ### admin — POSITIVE
 - Dashboard = **Operational**; Business-Lines (weekly) tab visible.
 - Tasks: create/edit/approve/assign/close/reject/return/cancel/reopen/**delete**; bulk approve.
-- Approvals queue; Recurring (`recurring.manage`); Users (`users.manage`, `roles.manage`); Projects CRUD (`/admin/projects`); Templates CRUD; Settings; **Audit** (`audit.read`); Reports + delayed; Performance evaluate; Request-update.
+- Approvals queue; Recurring (`recurring.manage`); Users (`users.manage`, `roles.manage`); Projects CRUD (`/admin/projects`); Templates CRUD (`templates.manage`); Settings; **Audit** (`audit.read`); Reports + delayed; Performance evaluate; Request-update.
 - **NEGATIVE:** none expected (full access).
 
 ### section_head — POSITIVE
 - Dashboard = **Operational**; weekly tab; **Request update**.
-- Approvals (approve/assign/close/reject/return/cancel), bulk approve; Tasks create/edit; Recurring; Users (`users.manage`); Templates CRUD; Settings; **Audit**; Reports + delayed; Performance evaluate; view project health `/projects/<id>`.
+- Approvals (approve/assign/close/reject/return/cancel), bulk approve; Tasks create/edit; Recurring; Users (`users.manage`); Templates CRUD (`templates.manage`); Settings; **Audit**; Reports + delayed; Performance evaluate; view project health `/projects/<id>`.
 - **NEGATIVE (must be blocked/hidden):** `/admin/projects` manage (no `projects.manage` → "Access restricted"); task **delete**; the **Executive** dashboard (`dashboard.executive`); `roles.manage` UI.
 
 ### employee — POSITIVE
@@ -120,7 +121,7 @@ Each: who's logged in · exact path · expected outcome · ☐ pass.
 
 **9) Project health.** *admin* → `/admin/projects` → open **"[TEST] Platform Rebuild"** → rollup (totals / completion % / overdue from its linked tasks). *section_head/ceo* reach `/projects/<id>` via a project-type task's Project link. *employee* cannot. ☐
 
-**10) Create from template.** *employee1* → Tasks → New Task → **template selector** → pick **"[TEST] Weekly Status Report"** → fields pre-fill → submit → normal `pending_approval` task. ☐
+**10) Create from template.** *admin/section_head* → `/admin/templates` → confirm the two seeded **"[TEST] Weekly Status Report"** / **"[TEST] Incident Review"** templates (create/edit one to exercise `templates.manage`). Then *employee1* → Tasks → **New Task** → **template selector** → pick **"[TEST] Weekly Status Report"** → fields pre-fill (title/description/priority/business line) → submit → normal `pending_approval` task. ☐
 
 **11) CEO.** *ceo* → Dashboard = **Executive**; open any task → add a **CEO Office Comment** (visible on the timeline). Confirm "New Task"/action bar are absent. ☐
 
@@ -130,13 +131,21 @@ Each: who's logged in · exact path · expected outcome · ☐ pass.
 
 ---
 
-## 3 · Teardown
-Run `supabase/sample-data/full-test-teardown.sql` (SQL editor). It deletes all
-`[TEST]`/`test-seed` data **and the five `@tss.test` users** (profiles + auth) in
-FK-safe order, in one transaction (idempotent). **Your real `tss.bc2026@gmail.com`
-admin account is preserved**; reference tables (business_lines, permissions,
-role_permissions, app_settings, departments) are untouched. The final SELECTs must
-show all test counts **0**, `admin_profile = 1`, and the reference tables non-zero.
+## 3 · Teardown (MARKER-ONLY · USER-PRESERVING)
+Run `supabase/sample-data/full-test-teardown.sql` (SQL editor). It deletes **only**
+rows carrying a seed marker (`[TEST]` titles/names, `evaluation_notes` `[TEST]…`,
+`raw_file_path='test-seed'`, and children scoped via their `[TEST]` parent task),
+in FK-safe child→parent order, in one transaction (idempotent).
+
+**No user is ever removed** — it NEVER deletes from `public.profiles` or
+`auth.users`, and NEVER scopes a delete by a user id. A real user's own
+(non-marked) tasks, notifications, evaluations and comments are left completely
+untouched. `audit_logs` and reference tables (business_lines, permissions,
+role_permissions, app_settings, departments) are also untouched.
+
+The final SELECTs must show **Verification A** = every marked count **0**, and
+**Verification B** = `real_users_found = 6`, `auth_users_found = 6`, and the
+reference tables non-zero.
 
 **Reminder:** attachments uploaded to Storage and any `audit_logs` from your test
 actions are *not* covered by the SQL teardown — remove Storage objects manually
