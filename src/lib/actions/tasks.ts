@@ -382,3 +382,35 @@ export async function convertCeoRequestAction(
     assignee_id: input.assignee_id,
   });
 }
+
+/**
+ * PART B — CEO "request update" nudge on a task the CEO created. Does NOT create
+ * a task; delegates to the request_task_update() definer function, which asserts
+ * caller=ceo AND created_by=auth.uid() and fans out a notification to the
+ * assignee + section_heads + admins (de-duped). Gated by tasks.request_update.
+ */
+export async function requestTaskUpdateAction(
+  taskId: string,
+): Promise<ActionResult> {
+  try {
+    const profile = await getCurrentProfile();
+    if (!profile) return fail("Not authenticated.");
+    const permissions = await getCurrentPermissions();
+    if (!can("tasks.request_update", permissions)) return fail("Not authorized.");
+
+    const supabase = await createClient();
+    const { data, error } = await supabase.rpc("request_task_update", {
+      p_task_id: taskId,
+    });
+    if (error) return fail(error.message);
+
+    const status = (data as { status?: string } | null)?.status;
+    if (status === "rejected") return fail("You can only nudge your own requests.");
+
+    revalidatePath("/tasks");
+    revalidatePath("/notifications");
+    return { ok: true, id: taskId };
+  } catch (e) {
+    return fail(errMessage(e));
+  }
+}

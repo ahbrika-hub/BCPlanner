@@ -1,4 +1,7 @@
-import { listTasks } from "@/lib/data/tasks";
+import {
+  listTasks,
+  getCeoDepartmentTasks,
+} from "@/lib/data/tasks";
 import { listBusinessLines } from "@/lib/data/business-lines";
 import { listActiveProjects } from "@/lib/data/projects";
 import { listActiveTaskTemplates } from "@/lib/data/task-templates";
@@ -10,6 +13,7 @@ import type { TaskPriority } from "@/lib/data/types";
 import { PageHeader } from "@/components/layout/page-header";
 import { TaskFilters } from "@/components/tasks/task-filters";
 import { TasksTable } from "@/components/tasks/tasks-table";
+import { CeoTasksView } from "@/components/tasks/ceo-tasks-view";
 import { NewTaskDialog } from "@/components/tasks/new-task-dialog";
 import { RequestTaskDialog } from "@/components/tasks/request-task-dialog";
 
@@ -18,6 +22,25 @@ export default async function TasksPage({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
+  const profile = await getCurrentProfile();
+
+  // CEO oversight: ALL department tasks with NO assignee identity (server-side),
+  // plus the lightweight "Request a task" entry and "Request update" on his own
+  // requests. A separate surface from the dashboard (whose drilldown stays off).
+  if (profile?.role === "ceo") {
+    const ceoTasks = await getCeoDepartmentTasks();
+    return (
+      <>
+        <PageHeader
+          title="Tasks"
+          subtitle="Department oversight"
+          actions={<RequestTaskDialog />}
+        />
+        <CeoTasksView tasks={ceoTasks} />
+      </>
+    );
+  }
+
   const sp = await searchParams;
   // Server-side filters (need the DB / RLS scope): multi-status, priority,
   // full-text search, and the derived overdue toggle. Assignee, business-line,
@@ -28,20 +51,18 @@ export default async function TasksPage({
   const search = typeof sp.q === "string" ? sp.q : undefined;
   const overdue = sp.overdue === "1";
 
-  const [tasks, businessLines, users, projects, templates, profile] =
-    await Promise.all([
-      listTasks({
-        status: status.length > 0 ? status : undefined,
-        priority,
-        search,
-        overdue,
-      }),
-      listBusinessLines(),
-      listAssignableUsers(),
-      listActiveProjects(),
-      listActiveTaskTemplates(),
-      getCurrentProfile(),
-    ]);
+  const [tasks, businessLines, users, projects, templates] = await Promise.all([
+    listTasks({
+      status: status.length > 0 ? status : undefined,
+      priority,
+      search,
+      overdue,
+    }),
+    listBusinessLines(),
+    listAssignableUsers(),
+    listActiveProjects(),
+    listActiveTaskTemplates(),
+  ]);
   const permissions = profile ? await getCurrentPermissions() : [];
 
   // Templates pre-fill the create form; readable by all task creators
@@ -64,10 +85,7 @@ export default async function TasksPage({
         title="Tasks"
         subtitle="Create, track, and manage tasks"
         actions={
-          profile?.role === "ceo" ? (
-            // CEO gets the lightweight "Request a task" entry, not the full form.
-            <RequestTaskDialog />
-          ) : can("tasks.create", permissions) ? (
+          can("tasks.create", permissions) ? (
             <NewTaskDialog
               businessLines={businessLines}
               users={users}

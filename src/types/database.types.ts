@@ -1074,6 +1074,21 @@ export type Database = {
         }
         Returns: number
       }
+      get_ceo_department_tasks: {
+        Args: never
+        Returns: {
+          id: string
+          task_no: string | null
+          title: string
+          status: Database["public"]["Enums"]["task_status"]
+          priority: Database["public"]["Enums"]["task_priority"]
+          business_line: string | null
+          due_date: string | null
+          created_at: string
+          is_my_request: boolean
+        }[]
+      }
+      request_task_update: { Args: { p_task_id: string }; Returns: Json }
     }
     Enums: {
       account_status: "pending" | "active" | "inactive"
