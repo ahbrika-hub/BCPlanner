@@ -15,6 +15,9 @@ import type { TaskStatus, UserRole } from "@/lib/data/types";
 import { formatDate } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { StatusBadge } from "@/components/ui/status-badge";
+import { Badge } from "@/components/ui/badge";
+import { ConvertCeoRequestDialog } from "@/components/tasks/convert-ceo-request-dialog";
+import type { AssignableUser, BusinessLineRow } from "@/lib/data/types";
 import { Card, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
@@ -43,6 +46,7 @@ export type QueueTask = {
   title: string;
   status: TaskStatus;
   creator_name: string | null;
+  creator_role: UserRole | null;
   assignee_name: string | null;
   created_at: string;
   sharepoint_url: string | null;
@@ -60,12 +64,21 @@ export function BulkQueue({
   actions,
   role,
   permissions,
+  businessLines = [],
+  users = [],
 }: {
   tasks: QueueTask[];
   actions: BulkActionDescriptor[];
   role: UserRole;
   permissions: string[];
+  // Supplied on the approvals surface so a manager can convert a CEO request.
+  businessLines?: BusinessLineRow[];
+  users?: AssignableUser[];
 }) {
+  // A manager can convert + assign a CEO request (has both perms).
+  const canConvert =
+    permissions.includes("tasks.approve") &&
+    permissions.includes("tasks.assign");
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -186,7 +199,7 @@ export function BulkQueue({
                     disabled={pending}
                   />
                   <div className="min-w-0">
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
                       <Link
                         href={`/tasks/${t.id}`}
                         className="font-medium hover:underline"
@@ -194,6 +207,10 @@ export function BulkQueue({
                         {t.title}
                       </Link>
                       <StatusBadge status={t.status} />
+                      {t.creator_role === "ceo" &&
+                        t.status === "pending_approval" && (
+                          <Badge variant="secondary">CEO request</Badge>
+                        )}
                     </div>
                     <p className="text-muted-foreground mt-1 text-xs">
                       {t.task_no} · {t.creator_name ?? "—"} ·{" "}
@@ -212,14 +229,27 @@ export function BulkQueue({
                     )}
                   </div>
                 </div>
-                {/* Single-task actions remain available, unchanged. */}
-                <TaskActionBar
-                  taskId={t.id}
-                  status={t.status}
-                  role={role}
-                  permissions={permissions}
-                  users={[]}
-                />
+                <div className="flex flex-wrap items-center gap-2">
+                  {/* One-step convert for a CEO request (set details + assign). */}
+                  {canConvert &&
+                    t.creator_role === "ceo" &&
+                    t.status === "pending_approval" && (
+                      <ConvertCeoRequestDialog
+                        taskId={t.id}
+                        title={t.title}
+                        businessLines={businessLines}
+                        users={users}
+                      />
+                    )}
+                  {/* Single-task actions remain available, unchanged. */}
+                  <TaskActionBar
+                    taskId={t.id}
+                    status={t.status}
+                    role={role}
+                    permissions={permissions}
+                    users={[]}
+                  />
+                </div>
               </CardContent>
             </Card>
           );

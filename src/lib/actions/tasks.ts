@@ -13,6 +13,7 @@ import {
   transitionTask,
 } from "@/lib/data/tasks";
 import { isActiveProject } from "@/lib/data/projects";
+import { getGeneralBusinessLineId } from "@/lib/data/business-lines";
 import { addComment } from "@/lib/data/comments";
 import { ACTION_BY_NAME, type TaskAction } from "@/lib/tasks/transitions";
 import { DASHBOARD_UPLOAD_CATEGORY } from "@/lib/dashboard/constants";
@@ -321,5 +322,95 @@ async function notifyForTransition(
       break;
     default:
       break;
+  }
+}
+
+/**
+ * PART A — CEO lightweight "Request a task".
+ * A one-line description becomes a task that flows through the SAME pipeline as
+ * any CEO-created task: createTaskAction lands it pending_approval, unassigned,
+ * created_by = the CEO. We only default the soft fields (priority medium,
+ * department category, the catch-all "General" business line) so a manager can
+ * refine + assign on conversion. No new permission, no new write path.
+ */
+export async function requestTaskAction(
+  description: unknown,
+): Promise<ActionResult> {
+  const title = typeof description === "string" ? description.trim() : "";
+  const businessLineId = await getGeneralBusinessLineId();
+  return createTaskAction({
+    title,
+    description: title,
+    task_category: "department",
+    priority: "medium",
+    business_line_id: businessLineId ?? undefined,
+  });
+}
+
+export type ConvertCeoRequestInput = {
+  title: string;
+  priority: "low" | "medium" | "high" | "critical";
+  business_line_id?: string;
+  due_date?: string;
+  assignee_id: string;
+};
+
+/**
+ * PART A — manager conversion of a CEO request.
+ * Sets priority / business line / due date, then approves and assigns — composed
+ * entirely from the EXISTING single-task actions (each re-checks its own
+ * permission + RLS), never a blanket UPDATE. The result is a normal assigned
+ * task. Stops at the first step that fails and reports it.
+ */
+export async function convertCeoRequestAction(
+  taskId: string,
+  input: ConvertCeoRequestInput,
+): Promise<ActionResult> {
+  const edited = await updateTaskAction(taskId, {
+    title: input.title,
+    priority: input.priority,
+    business_line_id: input.business_line_id,
+    due_date: input.due_date,
+    task_category: "department",
+  });
+  if (!edited.ok) return edited;
+
+  const approved = await transitionTaskAction(taskId, "approve");
+  if (!approved.ok) return approved;
+
+  return transitionTaskAction(taskId, "assign", {
+    assignee_id: input.assignee_id,
+  });
+}
+
+/**
+ * PART B — CEO "request update" nudge on a task the CEO created. Does NOT create
+ * a task; delegates to the request_task_update() definer function, which asserts
+ * caller=ceo AND created_by=auth.uid() and fans out a notification to the
+ * assignee + section_heads + admins (de-duped). Gated by tasks.request_update.
+ */
+export async function requestTaskUpdateAction(
+  taskId: string,
+): Promise<ActionResult> {
+  try {
+    const profile = await getCurrentProfile();
+    if (!profile) return fail("Not authenticated.");
+    const permissions = await getCurrentPermissions();
+    if (!can("tasks.request_update", permissions)) return fail("Not authorized.");
+
+    const supabase = await createClient();
+    const { data, error } = await supabase.rpc("request_task_update", {
+      p_task_id: taskId,
+    });
+    if (error) return fail(error.message);
+
+    const status = (data as { status?: string } | null)?.status;
+    if (status === "rejected") return fail("You can only nudge your own requests.");
+
+    revalidatePath("/tasks");
+    revalidatePath("/notifications");
+    return { ok: true, id: taskId };
+  } catch (e) {
+    return fail(errMessage(e));
   }
 }

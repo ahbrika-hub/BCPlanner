@@ -12,7 +12,7 @@ import type {
 const TASK_SELECT = `
   *,
   assignee:profiles!tasks_assignee_id_fkey(id, full_name),
-  creator:profiles!tasks_created_by_fkey(id, full_name),
+  creator:profiles!tasks_created_by_fkey(id, full_name, role),
   approver:profiles!tasks_approved_by_fkey(id, full_name),
   business_line:business_lines!tasks_business_line_id_fkey(id, name),
   project:projects!tasks_project_id_fkey(id, name)
@@ -125,4 +125,41 @@ export async function transitionTask(
   sideEffects: Tables["tasks"]["Update"] = {},
 ): Promise<Tables["tasks"]["Row"]> {
   return updateTask(id, { ...sideEffects, status: newStatus });
+}
+
+/**
+ * PART B — CEO oversight read. Returns ALL department tasks via the
+ * get_ceo_department_tasks() SECURITY DEFINER function, which intentionally
+ * omits assignee identity. We map to an explicit allowlist of fields so no
+ * assignee value can ride along even if the source row gained one.
+ */
+export type CeoDepartmentTask = {
+  id: string;
+  task_no: string | null;
+  title: string;
+  status: TaskStatus;
+  priority: TaskPriority;
+  business_line: string | null;
+  due_date: string | null;
+  created_at: string;
+  is_my_request: boolean;
+};
+
+export async function getCeoDepartmentTasks(): Promise<CeoDepartmentTask[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("get_ceo_department_tasks");
+  if (error) throw new Error(error.message);
+  return (data ?? []).map(
+    (r): CeoDepartmentTask => ({
+      id: r.id,
+      task_no: r.task_no,
+      title: r.title,
+      status: r.status,
+      priority: r.priority,
+      business_line: r.business_line,
+      due_date: r.due_date,
+      created_at: r.created_at,
+      is_my_request: r.is_my_request,
+    }),
+  );
 }
