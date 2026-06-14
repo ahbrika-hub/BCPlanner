@@ -27,8 +27,15 @@ export default async function DashboardPage({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  const sp = await searchParams;
-  const profile = await getCurrentProfile();
+  // Independent reads → fetch concurrently. profile/permissions are React
+  // cache()'d (still one round-trip each per request) and permissions derives
+  // from auth.uid() not the profile row, so eager-parallel is safe; the
+  // no-profile guard still short-circuits below.
+  const [sp, profile, permissions] = await Promise.all([
+    searchParams,
+    getCurrentProfile(),
+    getCurrentPermissions(),
+  ]);
   if (!profile) {
     return (
       <>
@@ -41,7 +48,6 @@ export default async function DashboardPage({
     );
   }
 
-  const permissions = await getCurrentPermissions();
   const canReadWeekly = can("dashboard.read", permissions);
 
   // The Business Lines view is only reachable by viewers who can read it; any

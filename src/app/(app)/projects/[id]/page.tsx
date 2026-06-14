@@ -19,9 +19,14 @@ export default async function ProjectDetailPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  const { id } = await params;
-  const profile = await getCurrentProfile();
-  const permissions = profile ? await getCurrentPermissions() : [];
+  // Independent reads → fetch concurrently. permissions derives from auth.uid()
+  // (not the profile row) and the helpers are React cache()'d, so eager-parallel
+  // is safe; the auth guard below still gates the project reads.
+  const [{ id }, profile, permissions] = await Promise.all([
+    params,
+    getCurrentProfile(),
+    getCurrentPermissions(),
+  ]);
 
   // Department-wide rollup → gated to those who can see all project tasks
   // (tasks.read_all = admin / section_head / ceo). Employees are excluded.
@@ -37,10 +42,14 @@ export default async function ProjectDetailPage({
     );
   }
 
-  const project = await getProject(id);
+  // Both reads are keyed only on `id` and independent of each other → run
+  // concurrently. notFound() after the batch discards the (cheap) health rollup
+  // in the rare case the project doesn't exist.
+  const [project, health] = await Promise.all([
+    getProject(id),
+    getProjectHealth(id),
+  ]);
   if (!project) notFound();
-
-  const health = await getProjectHealth(id);
 
   return (
     <>

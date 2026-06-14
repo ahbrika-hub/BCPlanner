@@ -35,7 +35,7 @@ import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TaskActionBar } from "@/components/tasks/task-action-bar";
 import { TaskTimeline } from "@/components/tasks/task-timeline";
-import { EditTaskDialog } from "@/components/tasks/edit-task-dialog";
+import { EditTaskDialogLazy } from "@/components/tasks/edit-task-dialog-lazy";
 import { CommentsSection } from "@/components/tasks/comments-section";
 import { AttachmentsSection } from "@/components/tasks/attachments-section";
 
@@ -111,7 +111,7 @@ export async function TaskDetailContent({ id }: { id: string }) {
         actions={
           <div className="flex flex-wrap items-center gap-2">
             {canEdit && (
-              <EditTaskDialog
+              <EditTaskDialogLazy
                 task={{
                   id: task.id,
                   title: task.title,
