@@ -39,26 +39,44 @@ const RAG_DOT: Record<string, string> = {
   red: "var(--color-status-red)",
 };
 
-// ── brand plate (logo by slug, existing resolver order) ──────────────────────
+// ── brand plate (logo resolved DETERMINISTICALLY by slug, server-side) ────────
 
-/** Active line's logo: /business-lines/<slug> svg→png→jpg→jpeg → TSS/SAPTCO text. */
-function BrandPlate({ slug, name }: { slug: string; name: string }) {
-  const sources = [
-    `/business-lines/${slug}.svg`,
-    `/business-lines/${slug}.png`,
-    `/business-lines/${slug}.jpg`,
-    `/business-lines/${slug}.jpeg`,
-  ];
-  const [idx, setIdx] = useState(0);
+/** Up-to-3-letter initials of a line's name, ignoring punctuation. */
+function plateInitials(name: string): string {
+  const words = name
+    .replace(/[^\p{L}\p{N}]+/gu, " ")
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean);
+  return (words.map((w) => w[0]).join("") || "?").slice(0, 3).toUpperCase();
+}
 
-  if (idx >= sources.length) {
+/**
+ * Active line's logo plate. `src` is pre-resolved server-side (slug-exact file
+ * URL or null) — no onError 404 chain, so no flicker / cross-mapping. The
+ * `<img>` is keyed by slug so React remounts it on a business-line switch and
+ * can never show a stale logo. Falls back to a stable initials chip when no file
+ * exists for the slug.
+ */
+function BrandPlate({
+  slug,
+  name,
+  accent,
+  src,
+}: {
+  slug: string;
+  name: string;
+  accent: string;
+  src: string | null;
+}) {
+  if (!src) {
     return (
-      <div className="flex min-h-12 shrink-0 flex-col items-start justify-center rounded-[10px] bg-white px-3 py-2 leading-none">
-        <b className="text-[22px] font-bold tracking-[0.02em] text-[var(--color-burgundy)]">
-          TSS
-        </b>
-        <span className="mt-[3px] text-[7.5px] font-bold tracking-[0.14em] text-[var(--color-navy)] uppercase">
-          SAPTCO
+      <div className="flex min-h-12 min-w-12 shrink-0 items-center justify-center rounded-[10px] bg-white px-3 py-2">
+        <span
+          className="text-[18px] font-bold tracking-[0.04em]"
+          style={{ color: accent }}
+        >
+          {plateInitials(name)}
         </span>
       </div>
     );
@@ -67,10 +85,10 @@ function BrandPlate({ slug, name }: { slug: string; name: string }) {
     <div className="flex min-h-12 shrink-0 items-center rounded-[10px] bg-white px-3 py-2">
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
-        src={sources[idx]}
+        key={slug}
+        src={src}
         alt={`${name} logo`}
         className="block h-[34px] w-auto"
-        onError={() => setIdx((i) => i + 1)}
       />
     </div>
   );
@@ -392,10 +410,11 @@ function SectionHead({ eyebrow, title }: { eyebrow: string; title: string }) {
 
 export function WeeklyDashboard({
   data,
+  logoSrc = {},
 }: {
   data: DashboardData;
-  // logos kept for API compatibility (resolution is by slug via BrandPlate).
-  logos?: Record<string, string>;
+  /** slug → pre-resolved logo URL (server-side, deterministic). */
+  logoSrc?: Record<string, string>;
 }) {
   const [period, setPeriod] = useState<PeriodId>(data.meta.defaultPeriod);
   const [blId, setBlId] = useState(
@@ -413,7 +432,15 @@ export function WeeklyDashboard({
       {/* Header */}
       <header className="flex min-h-[76px] items-center justify-between gap-5 border-b-[3px] border-[var(--color-burgundy-700)] bg-[var(--color-burgundy)] px-7 text-white">
         <div className="flex min-w-0 items-center gap-4">
-          {bl && <BrandPlate slug={bl.id} name={bl.name} />}
+          {bl && (
+            <BrandPlate
+              key={bl.id}
+              slug={bl.id}
+              name={bl.name}
+              accent={bl.accent}
+              src={logoSrc[bl.id] ?? null}
+            />
+          )}
           <div className="min-w-0">
             <div className="text-[17px] font-bold tracking-[-0.01em]">
               {data.meta.title || "Weekly dashboard"}

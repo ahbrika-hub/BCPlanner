@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, beforeAll, afterAll, vi } from "vitest";
 
 import {
   aggregateDelayed,
@@ -10,6 +10,17 @@ import type { TaskStatus, TaskPriority } from "@/lib/data/types";
 // "Delayed" MUST equal the canonical overdue predicate (reused from
 // @/lib/tasks/overdue): due_date < today AND status not terminal. This proves
 // the boundary cases and that grouping sums correctly.
+
+// aggregateDelayed reads the real clock (todayDateString); freeze it to the
+// fixture's TODAY so the boundary assertions are deterministic regardless of the
+// calendar date the suite runs on.
+beforeAll(() => {
+  vi.useFakeTimers();
+  vi.setSystemTime(new Date("2026-06-13T12:00:00Z"));
+});
+afterAll(() => {
+  vi.useRealTimers();
+});
 
 const TODAY = "2026-06-13";
 const YESTERDAY = "2026-06-12";

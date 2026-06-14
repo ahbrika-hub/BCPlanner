@@ -2,9 +2,9 @@ import { getCurrentProfile, getCurrentPermissions } from "@/lib/auth/session";
 import { can } from "@/lib/permissions";
 import {
   getLatestSnapshot,
-  getBusinessLineLogos,
   hasOpenDashboardUpdate,
 } from "@/lib/data/dashboard";
+import { lineLogoMap } from "@/lib/dashboard/logos";
 import { listAssignableUsers } from "@/lib/data/profiles";
 import { EmptyState } from "@/components/ui/empty-state";
 import { WeeklyDashboard } from "@/components/dashboard/weekly/weekly-dashboard";
@@ -34,12 +34,16 @@ export async function WeeklyDashboardView() {
   // its supporting data only for them.
   const canRequest = can("dashboard.request_update", permissions);
 
-  const [snapshot, logos, inProgress, users] = await Promise.all([
+  const [snapshot, inProgress, users] = await Promise.all([
     getLatestSnapshot(),
-    getBusinessLineLogos(),
     canRequest ? hasOpenDashboardUpdate() : Promise.resolve(false),
     canRequest ? listAssignableUsers() : Promise.resolve([]),
   ]);
+
+  // Deterministic, slug-exact logo resolution computed server-side (no flicker).
+  const logoSrc = snapshot
+    ? lineLogoMap(snapshot.data.businessLines.map((b) => b.id))
+    : {};
 
   return (
     <div className="space-y-4">
@@ -53,7 +57,7 @@ export async function WeeklyDashboardView() {
         </div>
       )}
       {snapshot ? (
-        <WeeklyDashboard data={snapshot.data} logos={logos} />
+        <WeeklyDashboard data={snapshot.data} logoSrc={logoSrc} />
       ) : (
         // Preserve #54's live-on-acceptance empty state.
         <EmptyState
