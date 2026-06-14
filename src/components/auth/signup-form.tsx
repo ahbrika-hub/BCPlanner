@@ -10,7 +10,7 @@ import { toast } from "sonner";
 import { signUp } from "@/lib/auth/actions";
 import {
   signupSchema,
-  ALLOWED_SIGNUP_DOMAINS,
+  signupAllowlistLabel,
   type SignupInput,
 } from "@/lib/validations/auth";
 import { TssLogo } from "@/components/brand/tss-logo";
@@ -84,10 +84,7 @@ export function SignupForm() {
         </CardTitle>
         <CardDescription>
           Registration is limited to{" "}
-          <strong>
-            {ALLOWED_SIGNUP_DOMAINS.map((d) => `@${d}`).join(" or ")}
-          </strong>{" "}
-          addresses.
+          <strong>{signupAllowlistLabel()}</strong>.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -116,7 +113,7 @@ export function SignupForm() {
               id="email"
               type="email"
               autoComplete="email"
-              placeholder="you@saptco.com"
+              placeholder="you@saptco.com.sa"
               aria-invalid={!!errors.email}
               {...register("email")}
             />

@@ -6,8 +6,8 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import {
   signupSchema,
-  isAllowedSignupDomain,
-  ALLOWED_SIGNUP_DOMAINS,
+  isAllowedSignupEmail,
+  signupAllowlistLabel,
   forgotPasswordSchema,
   updatePasswordSchema,
   type SignupInput,
@@ -74,12 +74,12 @@ export async function signUp(input: SignupInput): Promise<SignUpResult> {
   }
   const { full_name, email, password } = parsed.data;
 
-  // Layer (a): domain restriction in the server action (handle_new_user is layer b).
-  if (!isAllowedSignupDomain(email)) {
+  // Layer (a): allow-list check in the server action (handle_new_user is layer b).
+  if (!isAllowedSignupEmail(email)) {
     return {
       ok: false,
       status: "domain",
-      message: `Registration is limited to ${ALLOWED_SIGNUP_DOMAINS.map((d) => "@" + d).join(", ")} addresses.`,
+      message: `Registration is limited to ${signupAllowlistLabel()}.`,
     };
   }
 
