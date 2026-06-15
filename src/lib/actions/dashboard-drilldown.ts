@@ -31,7 +31,13 @@ export type DrilldownKey =
   | { kind: "status"; status: TaskStatus }
   | { kind: "active" }
   | { kind: "overdue" }
-  | { kind: "assignee-active"; assigneeId: string };
+  | { kind: "assignee-active"; assigneeId: string }
+  // Project-health metrics (project detail page). Same role-scoping/trust
+  // boundary as the dashboard keys: ceo → none, employee → own (RLS), managers
+  // → all of the project's tasks.
+  | { kind: "project-total"; projectId: string }
+  | { kind: "project-status"; projectId: string; status: TaskStatus }
+  | { kind: "project-overdue"; projectId: string };
 
 // Mirrors analytics' ACTIVE_STATUSES (the "in-flight" set the dashboard counts).
 const ACTIVE_STATUSES: TaskStatus[] = [
@@ -89,6 +95,29 @@ export async function fetchDrilldownTasks(
       await listTasks({
         status: ACTIVE_STATUSES,
         assignee_id: ownId ?? key.assigneeId,
+      }),
+    );
+  }
+  if (key.kind === "project-total") {
+    return slim(
+      await listTasks({ project_id: key.projectId, assignee_id: ownId }),
+    );
+  }
+  if (key.kind === "project-status") {
+    return slim(
+      await listTasks({
+        project_id: key.projectId,
+        status: [key.status],
+        assignee_id: ownId,
+      }),
+    );
+  }
+  if (key.kind === "project-overdue") {
+    return slim(
+      await listTasks({
+        project_id: key.projectId,
+        overdue: true,
+        assignee_id: ownId,
       }),
     );
   }

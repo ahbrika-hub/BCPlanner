@@ -23,6 +23,7 @@ export type TaskFilters = {
   priority?: TaskPriority;
   assignee_id?: string;
   business_line_id?: string;
+  project_id?: string;
   search?: string;
   /** Derived overdue filter — see @/lib/tasks/overdue for the canonical rule. */
   overdue?: boolean;
@@ -44,6 +45,7 @@ export async function listTasks(
   if (filters.assignee_id) query = query.eq("assignee_id", filters.assignee_id);
   if (filters.business_line_id)
     query = query.eq("business_line_id", filters.business_line_id);
+  if (filters.project_id) query = query.eq("project_id", filters.project_id);
 
   if (filters.search) {
     // FTS over title+task_no+description (search_vector, 'simple' config) OR a

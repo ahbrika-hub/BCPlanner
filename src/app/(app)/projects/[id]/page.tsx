@@ -9,7 +9,8 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { KpiCard } from "@/components/charts/kpi-card";
+import { KpiCard } from "@/components/ui/kpi-card";
+import { DrilldownKpi } from "@/components/dashboard/drilldown-kpi";
 
 // Live, permission-scoped data via cookies — render on demand.
 export const dynamic = "force-dynamic";
@@ -63,23 +64,48 @@ export default async function ProjectDetailPage({
         }
       />
 
+      {/* Clickable metrics drill into the underlying project tasks (reuses the
+          dashboard DrilldownDialog, RLS-scoped). Avg quality has no task list,
+          so it stays a plain card. No icon/function props cross to the client
+          components, so the RSC boundary is safe. */}
       <div className="mb-6 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
-        <KpiCard label="Total tasks" value={health.total} />
-        <KpiCard
+        <DrilldownKpi
+          label="Total tasks"
+          value={health.total}
+          drilldown={{ kind: "project-total", projectId: id }}
+          title={`${project.name} — all tasks`}
+          description="Every task in this project."
+        />
+        <DrilldownKpi
           label="Completed"
           value={health.completed}
           accent="var(--color-status-completed)"
+          drilldown={{ kind: "project-status", projectId: id, status: "completed" }}
+          title={`${project.name} — completed`}
+          description="Completed tasks in this project."
         />
-        <KpiCard label="In progress" value={health.inProgress} />
-        <KpiCard
+        <DrilldownKpi
+          label="In progress"
+          value={health.inProgress}
+          drilldown={{ kind: "project-status", projectId: id, status: "in_progress" }}
+          title={`${project.name} — in progress`}
+          description="Tasks currently in progress."
+        />
+        <DrilldownKpi
           label="Pending review"
           value={health.pendingReview}
           accent="var(--color-status-pending_review)"
+          drilldown={{ kind: "project-status", projectId: id, status: "pending_review" }}
+          title={`${project.name} — pending review`}
+          description="Tasks awaiting review."
         />
-        <KpiCard
+        <DrilldownKpi
           label="Overdue"
           value={health.overdue}
           accent="var(--color-danger)"
+          drilldown={{ kind: "project-overdue", projectId: id }}
+          title={`${project.name} — overdue`}
+          description="Past due and not yet completed."
         />
         <KpiCard
           label="Avg quality"
