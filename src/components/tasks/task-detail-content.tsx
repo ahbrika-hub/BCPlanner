@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 
 import { getTask } from "@/lib/data/tasks";
 import { listUpdates } from "@/lib/data/task-updates";
+import { pickLatestUpdate } from "@/lib/tasks/last-update";
 import { listComments } from "@/lib/data/comments";
 import { listAttachments } from "@/lib/data/attachments";
 import { getTaskTimeline } from "@/lib/data/timeline";
@@ -134,6 +135,8 @@ export async function TaskDetailContent({ id }: { id: string }) {
               role={profile.role}
               permissions={permissions}
               users={users}
+              lastUpdate={pickLatestUpdate(updates)}
+              currentProgress={task.progress_percentage}
             />
           </div>
         }

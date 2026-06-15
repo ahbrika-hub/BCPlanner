@@ -12,6 +12,8 @@ import {
 import { transitionTaskAction } from "@/lib/actions/tasks";
 import { addUpdateAction } from "@/lib/actions/collaboration";
 import type { TaskStatus, UserRole, AssignableUser } from "@/lib/data/types";
+import type { LastUpdate } from "@/lib/tasks/last-update";
+import { formatDateTime } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -37,12 +39,18 @@ export function TaskActionBar({
   role,
   permissions,
   users,
+  lastUpdate,
+  currentProgress,
 }: {
   taskId: string;
   status: TaskStatus;
   role: UserRole;
   permissions: string[];
   users: AssignableUser[];
+  // The task's most recent committed update (for the "continue from context"
+  // panel + progress pre-fill) and the task's current progress as a fallback.
+  lastUpdate?: LastUpdate | null;
+  currentProgress?: number;
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -89,6 +97,12 @@ export function TaskActionBar({
     if (a.requires === "none") {
       run(() => transitionTaskAction(taskId, a.action), `${a.label} done`);
     } else {
+      // Pre-fill the progress input so the user continues from the last recorded
+      // value (latest update's progress, else the task's current progress).
+      if (a.requires === "progress") {
+        const seed = lastUpdate?.progress_percentage ?? currentProgress;
+        setProgress(seed != null ? String(seed) : "");
+      }
       setActive(a);
     }
   };
@@ -207,6 +221,24 @@ export function TaskActionBar({
 
           {active?.requires === "progress" && (
             <div className="space-y-3">
+              {lastUpdate && (
+                <div className="bg-muted/40 space-y-1 rounded-md border p-3 text-xs">
+                  <div className="flex items-center justify-between">
+                    <span className="font-medium">
+                      Last update · {lastUpdate.progress_percentage}%
+                    </span>
+                    <span className="text-muted-foreground">
+                      {lastUpdate.updater_name ?? "—"} ·{" "}
+                      {formatDateTime(lastUpdate.created_at)}
+                    </span>
+                  </div>
+                  {lastUpdate.status_update_comment && (
+                    <p className="text-muted-foreground whitespace-pre-wrap">
+                      {lastUpdate.status_update_comment}
+                    </p>
+                  )}
+                </div>
+              )}
               <div className="space-y-2">
                 <Label htmlFor="progress">Progress %</Label>
                 <Input
