@@ -3,6 +3,7 @@
 import { listTasks } from "@/lib/data/tasks";
 import { getOverdueTasks } from "@/lib/data/analytics";
 import { getCurrentProfile } from "@/lib/auth/session";
+import { getDrilldownScope } from "@/lib/dashboard/drilldown-scope";
 import type { TaskStatus } from "@/lib/data/types";
 
 /**
@@ -72,12 +73,12 @@ export async function fetchDrilldownTasks(
 ): Promise<DrilldownTask[]> {
   const profile = await getCurrentProfile();
   if (!profile) return [];
-  // The CEO has no task-detail drill-down on the dashboard.
-  if (profile.role === "ceo") return [];
-
-  // Employees may only see their OWN tasks. RLS already enforces this (they lack
+  const scope = getDrilldownScope(profile.role);
+  // ceo → no task-detail drill-down (read-only executive overview).
+  if (scope === "none") return [];
+  // employee → only their OWN tasks. RLS already enforces this (they lack
   // tasks.read_all), but scope the queries explicitly as defence-in-depth.
-  const ownId = profile.role === "employee" ? profile.id : undefined;
+  const ownId = scope === "own" ? profile.id : undefined;
 
   if (key.kind === "overdue") {
     const rows = await getOverdueTasks(50);
