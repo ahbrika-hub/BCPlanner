@@ -5,6 +5,7 @@ import {
   hasOpenDashboardUpdate,
 } from "@/lib/data/dashboard";
 import { lineLogoMap } from "@/lib/dashboard/logos";
+import { applyBlSectionExclusions } from "@/lib/dashboard/bl-section-exclusions";
 import { listAssignableUsers } from "@/lib/data/profiles";
 import { EmptyState } from "@/components/ui/empty-state";
 import { WeeklyDashboard } from "@/components/dashboard/weekly/weekly-dashboard";
@@ -40,9 +41,13 @@ export async function WeeklyDashboardView() {
     canRequest ? listAssignableUsers() : Promise.resolve([]),
   ]);
 
+  // Render-time, slug-keyed removal of specific per-line sections (e.g. merapp's
+  // Technician KPIs table, artc's Analysis Charts) — durable across uploads.
+  const data = snapshot ? applyBlSectionExclusions(snapshot.data) : null;
+
   // Deterministic, slug-exact logo resolution computed server-side (no flicker).
-  const logoSrc = snapshot
-    ? lineLogoMap(snapshot.data.businessLines.map((b) => b.id))
+  const logoSrc = data
+    ? lineLogoMap(data.businessLines.map((b) => b.id))
     : {};
 
   return (
@@ -56,8 +61,8 @@ export async function WeeklyDashboardView() {
           />
         </div>
       )}
-      {snapshot ? (
-        <WeeklyDashboard data={snapshot.data} logoSrc={logoSrc} />
+      {data ? (
+        <WeeklyDashboard data={data} logoSrc={logoSrc} />
       ) : (
         // Preserve #54's live-on-acceptance empty state.
         <EmptyState
