@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Plus, Loader2 } from "lucide-react";
 import { toast } from "sonner";
@@ -32,6 +32,7 @@ import {
   TaskFormFields,
   type TaskFormValues,
 } from "@/components/tasks/task-form-fields";
+import { AssigneeWorkloadPanel } from "@/components/tasks/assignee-workload-panel";
 
 type FormValues = TaskFormValues;
 
@@ -77,10 +78,18 @@ export function NewTaskDialog({
     handleSubmit,
     reset,
     setValue,
+    control,
     formState: { errors },
   } = useForm<FormValues>({
     resolver: zodResolver(createTaskSchema),
     defaultValues: CREATE_DEFAULTS,
+  });
+
+  // Live values that drive the read-only assignee-workload preview (useWatch is
+  // hook-based and React-Compiler-friendly, unlike the returned watch()).
+  const [watchedAssignee, watchedStart, watchedDue] = useWatch({
+    control,
+    name: ["assignee_id", "start_date", "due_date"],
   });
 
   // Selecting a template only supplies DEFAULTS — submission still goes through
@@ -167,6 +176,12 @@ export function NewTaskDialog({
             users={users}
             projects={projects}
             defaults={seeded}
+          />
+
+          <AssigneeWorkloadPanel
+            assigneeId={watchedAssignee}
+            from={watchedStart}
+            to={watchedDue}
           />
 
           <DialogFooter>
