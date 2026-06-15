@@ -4,12 +4,8 @@
 import type { TaskStatus } from "@/lib/data/types";
 
 /**
- * Daily capacity per employee. The old daily_employee_workload view used 8h as a
- * single-day capacity; here capacity scales with the selected range.
- *
- * FLAG: this counts CALENDAR days × 8h. The SAPTCO work-week (Sun–Thu vs Mon–Fri)
- * is unconfirmed — "This week" boundaries and the working-days capacity should be
- * revisited once the official work-week is confirmed.
+ * Daily capacity per working day. Capacity scales with the WORKING days in the
+ * selected range (see countWorkingDays) — not calendar days.
  */
 export const WORK_HOURS_PER_DAY = 8;
 
@@ -56,8 +52,27 @@ export function calendarDays(from: string, to: string): number {
   return Math.floor(ms / 86_400_000) + 1;
 }
 
+/**
+ * Inclusive count of WORKING days (SAPTCO work-week: Sunday–Thursday) between two
+ * YYYY-MM-DD dates; Friday + Saturday are non-working (excluded). 0 if invalid or
+ * inverted. NOTE: public holidays are out of scope (work-week only) — a known
+ * future refinement, not built here.
+ */
+export function countWorkingDays(from: string, to: string): number {
+  const start = Date.parse(`${isoDate(from)}T00:00:00Z`);
+  const end = Date.parse(`${isoDate(to)}T00:00:00Z`);
+  if (Number.isNaN(start) || Number.isNaN(end) || end < start) return 0;
+  let count = 0;
+  for (let t = start; t <= end; t += 86_400_000) {
+    const dow = new Date(t).getUTCDay(); // 0=Sun … 5=Fri, 6=Sat
+    if (dow !== 5 && dow !== 6) count += 1;
+  }
+  return count;
+}
+
+/** Available hours over a range = 8h × working days (Sun–Thu). */
 export function capacityHours(from: string, to: string): number {
-  return WORK_HOURS_PER_DAY * calendarDays(from, to);
+  return WORK_HOURS_PER_DAY * countWorkingDays(from, to);
 }
 
 /**
@@ -115,9 +130,9 @@ const fmt = (d: Date) =>
 
 /**
  * Resolve a preset (anchored at `anchor` = today YYYY-MM-DD) into an inclusive
- * [from, to]. Week = Sunday→Saturday calendar week; Month = 1st→last day.
- * FLAG: week boundaries assume a Sun–Sat calendar week; confirm the SAPTCO
- * work-week before treating these as working ranges.
+ * [from, to]. Week = the SAPTCO work-week Sunday→Thursday; Month = 1st→last day;
+ * Today = the single day. Capacity over any range counts only Sun–Thu (see
+ * capacityHours), so Fri/Sat add no capacity even inside Month/Custom ranges.
  */
 export function resolveWorkloadRange(
   preset: WorkloadPreset,
@@ -130,11 +145,12 @@ export function resolveWorkloadRange(
     return { from: anchor, to: anchor, preset };
   }
   if (preset === "week") {
+    // SAPTCO work-week: Sunday (start) → Thursday (start + 4 days).
     const dow = a.getUTCDay(); // 0=Sun
     const start = new Date(a);
     start.setUTCDate(a.getUTCDate() - dow);
     const end = new Date(start);
-    end.setUTCDate(start.getUTCDate() + 6);
+    end.setUTCDate(start.getUTCDate() + 4);
     return { from: fmt(start), to: fmt(end), preset };
   }
   if (preset === "month") {

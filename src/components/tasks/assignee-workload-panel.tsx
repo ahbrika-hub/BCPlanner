@@ -85,24 +85,33 @@ export function AssigneeWorkloadPanel({
         )}
       </div>
       {data && !loading && (
-        <dl className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs sm:grid-cols-4">
-          <div>
-            <dt className="text-muted-foreground">Assigned</dt>
-            <dd className="font-medium">{data.total_estimated_hours}h</dd>
-          </div>
-          <div>
-            <dt className="text-muted-foreground">Capacity</dt>
-            <dd className="font-medium">{data.capacity_hours}h</dd>
-          </div>
-          <div>
-            <dt className="text-muted-foreground">Utilisation</dt>
-            <dd className="font-medium">{data.utilization_pct}%</dd>
-          </div>
-          <div>
-            <dt className="text-muted-foreground">Active tasks</dt>
-            <dd className="font-medium">{data.active_task_count}</dd>
-          </div>
-        </dl>
+        <>
+          <dl className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs sm:grid-cols-4">
+            <div>
+              <dt className="text-muted-foreground">Assigned</dt>
+              <dd className="font-medium">{data.total_estimated_hours}h</dd>
+            </div>
+            <div>
+              <dt className="text-muted-foreground">Capacity</dt>
+              <dd className="font-medium">{data.capacity_hours}h</dd>
+            </div>
+            <div>
+              <dt className="text-muted-foreground">Utilisation</dt>
+              <dd className="font-medium">
+                {data.capacity_hours > 0 ? `${data.utilization_pct}%` : "—"}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-muted-foreground">Active tasks</dt>
+              <dd className="font-medium">{data.active_task_count}</dd>
+            </div>
+          </dl>
+          {data.capacity_hours === 0 && (
+            <p className="text-muted-foreground mt-2 text-xs">
+              No working days (Sun–Thu) in this span — Fri/Sat add no capacity.
+            </p>
+          )}
+        </>
       )}
     </div>
   );

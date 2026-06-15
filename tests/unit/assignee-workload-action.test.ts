@@ -49,12 +49,13 @@ describe("getAssigneeWorkloadAction", () => {
       to: "2026-06-14",
     });
     expect(res).not.toBeNull();
-    // aggregate math (PR 2): 2 in-range tasks, 14h, 7-day capacity 56h
+    // aggregate math: 2 in-range tasks, 14h; 06-08→06-14 = 5 working days (Sun–Thu)
+    // → 40h capacity (Fri 06-12 + Sat 06-13 excluded), util 14/40*100 = 35%.
     expect(res).toEqual({
       active_task_count: 2,
       total_estimated_hours: 14,
-      capacity_hours: 56,
-      utilization_pct: 25,
+      capacity_hours: 40,
+      utilization_pct: 35,
       workload_level: "low",
     });
     // exact key allowlist — no id/title/details
