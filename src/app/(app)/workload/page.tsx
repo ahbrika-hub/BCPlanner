@@ -63,7 +63,11 @@ export default async function WorkloadPage({
     <>
       <PageHeader
         title="Workload"
-        subtitle={`Active capacity and utilization · ${rangeLabel} · ${capacity}h capacity / employee`}
+        subtitle={`Active capacity and utilization · ${rangeLabel} · ${
+          capacity > 0
+            ? `${capacity}h capacity / employee`
+            : "no working days in range (Fri/Sat)"
+        }`}
       />
 
       <WorkloadPeriodFilter
