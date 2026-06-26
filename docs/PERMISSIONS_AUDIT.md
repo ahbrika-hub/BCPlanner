@@ -75,6 +75,20 @@ verification SELECTs for **staging** are in §6.
 - **admin (38):** every permission in the catalogue (incl. `roles.manage`,
   `tasks.delete`).
 
+> **⚠️ Reconciliation note (current state supersedes the original seed above).**
+> The figures in §2.1 are the *original* base seed. Subsequent migrations changed
+> the catalogue and grants; the authoritative current totals (see
+> `docs/FEATURE_INVENTORY.md`) are **47 keys** with **admin 46 · section_head 43 ·
+> employee 17 · ceo 14**. Key deltas since the base seed: catalogue gained
+> `signups.approve`, `projects.read/manage`, `templates.read/manage`,
+> `tasks.request_update`; `section_head` gained `projects.manage`; `ceo` gained
+> `tasks.create` + `tasks.request_update` and **lost** `workload.read_all` +
+> `performance.read_all`. The current PR's permission tidy (migration
+> `20260626140000`) then removes three decorative grants
+> (`dashboard.executive`, `task_comments.read`, `task_updates.read`), leaving
+> **admin 43 · section_head 41 · employee 15 · ceo 12** (catalogue unchanged at
+> 47). M2 below (the `dashboard.executive` orphan) is resolved by that tidy.
+
 ### 2.2 Route guards (re-verified against the page code)
 
 | Route             | Guard requires                                   | Notes                                           |
@@ -276,7 +290,8 @@ Run these on **staging** (never production) to confirm the live database matches
 the repo seed this audit relied on. All are read-only `SELECT`s.
 
 ```sql
--- 6.1 Per-role grant counts — expect admin=38, section_head=35, employee=15, ceo=10
+-- 6.1 Per-role grant counts — expect admin=43, section_head=41, employee=15, ceo=12
+--     (post permission-tidy migration 20260626140000; pre-tidy: 46/43/17/14)
 select rp.role, count(*) as granted
 from public.role_permissions rp
 group by rp.role
@@ -296,13 +311,14 @@ select exists (
   where rp.role = 'ceo' and p.key = 'reports.read'
 ) as ceo_has_reports_read;
 
--- 6.4 M2: who holds dashboard.executive? Expect {ceo, admin}.
+-- 6.4 M2: who holds dashboard.executive? Expect NONE after the tidy migration
+--     20260626140000 (pre-tidy this was {ceo, admin}).
 select rp.role
 from public.role_permissions rp
 join public.permissions p on p.id = rp.permission_id
 where p.key = 'dashboard.executive'
 order by rp.role;
 
--- 6.5 Catalogue size — expect 38
+-- 6.5 Catalogue size — expect 47
 select count(*) as permission_count from public.permissions;
 ```

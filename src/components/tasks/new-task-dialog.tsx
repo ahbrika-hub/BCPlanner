@@ -57,13 +57,27 @@ export function NewTaskDialog({
   users,
   projects,
   templates = [],
+  open: openProp,
+  onOpenChange,
+  showTrigger = true,
 }: {
   businessLines: BusinessLineRow[];
   users: AssignableUser[];
   projects: { id: string; name: string }[];
   templates?: NewTaskTemplate[];
+  /** Controlled open state (e.g. when launched from the command palette). */
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  /** Render the built-in "New Task" trigger button. Off when launched externally. */
+  showTrigger?: boolean;
 }) {
-  const [open, setOpen] = useState(false);
+  const [internalOpen, setInternalOpen] = useState(false);
+  const isControlled = openProp !== undefined;
+  const open = isControlled ? openProp : internalOpen;
+  const setOpen = (next: boolean) => {
+    if (isControlled) onOpenChange?.(next);
+    else setInternalOpen(next);
+  };
   const [pending, startTransition] = useTransition();
   // Bumped on a successful create or template pick to remount TaskFormFields,
   // resetting its internal task-category state alongside the react-hook-form
@@ -135,12 +149,14 @@ export function NewTaskDialog({
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button>
-          <Plus className="size-4" />
-          New Task
-        </Button>
-      </DialogTrigger>
+      {showTrigger && (
+        <DialogTrigger asChild>
+          <Button>
+            <Plus className="size-4" />
+            New Task
+          </Button>
+        </DialogTrigger>
+      )}
       <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>New Task</DialogTitle>

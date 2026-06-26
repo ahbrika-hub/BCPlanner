@@ -19,7 +19,9 @@ repository is a from‑scratch rebuild; the legacy project is used only as a
 - **ESLint 9** + **Prettier 3** (with `prettier-plugin-tailwindcss`)
 - **Supabase** — Postgres 16 + Auth + Storage + **RLS** (RBAC via
   `permissions`/`role_permissions`, enforced by `authorize()` in SQL and
-  `can()`/`requirePermission()` in the app)
+  inline `can()` checks in the app; pages render an `EmptyState`/"access
+  restricted" affordance rather than redirecting. A `requirePermission()`
+  redirect helper exists but is currently not used by any page.)
 - **Zod 4** + **react-hook-form** (validation), **recharts** (charts)
 - **Vitest** (unit) + **Playwright** (e2e)
 - **Vercel** — hosting (project `bc-planner`, Next.js preset)

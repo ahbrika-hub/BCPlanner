@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 
-import { addTaskUpdateSchema } from "@/lib/validations";
+import { addTaskUpdateSchema, addCommentSchema } from "@/lib/validations";
 import { getCurrentProfile, getCurrentPermissions } from "@/lib/auth/session";
 import { can } from "@/lib/permissions";
 import { createClient } from "@/lib/supabase/server";
@@ -59,8 +59,13 @@ export async function addCommentAction(
   taskId: string,
   text: string,
   commentType: CommentType = "general",
+  mentionedUserIds: string[] = [],
 ): Promise<ActionResult> {
-  if (!text.trim()) return fail("Comment cannot be empty.");
+  const parsed = addCommentSchema.safeParse({ text, mentionedUserIds });
+  if (!parsed.success) {
+    return fail(parsed.error.issues[0]?.message ?? "Invalid input.");
+  }
+  const body = parsed.data.text;
   try {
     const profile = await getCurrentProfile();
     if (!profile) return fail("Not authenticated.");
@@ -68,22 +73,50 @@ export async function addCommentAction(
     if (!can("task_comments.create", permissions))
       return fail("Not authorized.");
 
+    const supabase = await createClient();
+
+    // Re-derive the mentionable audience server-side (same visibility rule as
+    // the picker) and keep ONLY ids that are genuinely allowed — never trust the
+    // client list. Drop self-mentions and de-dupe. A mention to a user who can't
+    // see the task is silently dropped, so it can neither be persisted nor leak
+    // the task via a notification.
+    const { data: audience, error: audErr } = await supabase.rpc(
+      "task_mentionable_users",
+      { p_task_id: taskId },
+    );
+    if (audErr) throw new Error(audErr.message);
+    const allowed = new Set((audience ?? []).map((u) => u.id));
+    const validMentions = [...new Set(parsed.data.mentionedUserIds)].filter(
+      (id) => id !== profile.id && allowed.has(id),
+    );
+
     await addComment({
       task_id: taskId,
       author_id: profile.id,
       comment_role: profile.role,
       comment_type: commentType,
-      comment_text: text.trim(),
+      comment_text: body,
+      mentioned_user_ids: validMentions,
     });
+
+    // Notify ONLY the mentioned (and visible) users — never the whole task.
+    for (const userId of validMentions) {
+      await supabase.rpc("create_notification", {
+        p_user_id: userId,
+        p_type: "mention",
+        p_title: `${profile.full_name} mentioned you in a comment`,
+        p_message: body.slice(0, 140),
+        p_task_id: taskId,
+      });
+    }
 
     // CEO office comments alert the section heads to action them.
     if (commentType === "ceo_office_comment") {
-      const supabase = await createClient();
       await supabase.rpc("notify_role", {
         p_role: "section_head",
         p_type: "comment_added",
         p_title: "CEO Office comment added",
-        p_message: text.trim().slice(0, 140),
+        p_message: body.slice(0, 140),
         p_task_id: taskId,
       });
     }
