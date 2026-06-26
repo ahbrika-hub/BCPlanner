@@ -1,6 +1,7 @@
 import { AppSidebar } from "@/components/layout/app-sidebar";
 import { AppTopbar } from "@/components/layout/app-topbar";
 import { CommandPalette } from "@/components/layout/command-palette";
+import { RealtimeNotifications } from "@/components/notifications/realtime-notifications";
 import { Toaster } from "@/components/ui/sonner";
 
 export function AppShell({
@@ -31,6 +32,7 @@ export function AppShell({
         </main>
       </div>
       <CommandPalette />
+      <RealtimeNotifications />
       <Toaster richColors position="top-right" />
     </div>
   );
