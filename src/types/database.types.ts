@@ -1101,6 +1101,19 @@ export type Database = {
         }[]
       }
       get_my_permissions: { Args: never; Returns: string[] }
+      overdue_tasks: {
+        Args: { p_assignee?: string }
+        Returns: {
+          id: string
+          task_no: string | null
+          title: string
+          due_date: string | null
+          status: Database["public"]["Enums"]["task_status"]
+          priority: Database["public"]["Enums"]["task_priority"]
+          assignee_id: string | null
+          assignee_name: string | null
+        }[]
+      }
       task_mentionable_users: {
         Args: { p_task_id: string }
         Returns: {
