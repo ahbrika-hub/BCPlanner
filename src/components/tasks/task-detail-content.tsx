@@ -4,7 +4,11 @@ import { notFound } from "next/navigation";
 import { getTask } from "@/lib/data/tasks";
 import { listUpdates } from "@/lib/data/task-updates";
 import { pickLatestUpdate } from "@/lib/tasks/last-update";
-import { listComments } from "@/lib/data/comments";
+import {
+  listComments,
+  listMentionableUsers,
+  getDisplayNames,
+} from "@/lib/data/comments";
 import { listAttachments } from "@/lib/data/attachments";
 import { getTaskTimeline } from "@/lib/data/timeline";
 import { listAssignableUsers } from "@/lib/data/profiles";
@@ -67,6 +71,7 @@ export async function TaskDetailContent({ id }: { id: string }) {
     projects,
     timeline,
     profile,
+    mentionableUsers,
   ] = await Promise.all([
     listUpdates(id),
     listComments(id),
@@ -76,9 +81,16 @@ export async function TaskDetailContent({ id }: { id: string }) {
     listActiveProjects(),
     getTaskTimeline(id),
     getCurrentProfile(),
+    listMentionableUsers(id),
   ]);
   if (!profile) notFound();
   const permissions = await getCurrentPermissions();
+
+  // Resolve mentioned user ids across the thread to names for chip rendering.
+  const mentionedIds = comments.flatMap((c) => c.mentioned_user_ids ?? []);
+  const mentionNameById = Object.fromEntries(
+    (await getDisplayNames(mentionedIds)).map((p) => [p.id, p.full_name]),
+  );
 
   // Mirrors updateTaskAction + the tasks_update RLS policy: creator, current
   // assignee, or a manager (tasks.read_all), gated by tasks.update. The action
@@ -291,6 +303,8 @@ export async function TaskDetailContent({ id }: { id: string }) {
             comments={comments}
             role={profile.role}
             permissions={permissions}
+            mentionableUsers={mentionableUsers}
+            mentionNameById={mentionNameById}
           />
         </TabsContent>
 

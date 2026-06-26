@@ -62,22 +62,33 @@ application role comes from their JWT (`auth.uid()` → `profiles.role`).
 
 ### Permission catalogue (by role)
 
-- **employee** (15): create/read/update own tasks, submit for review, task
+- **employee** (17): create/read/update own tasks, submit for review, task
   updates, comments, attachments, own workload/performance/reports,
   notifications, standard dashboard.
-- **section_head** (35): all employee permissions plus read-all, approve/reject/
+- **section_head** (43): all employee permissions plus read-all, approve/reject/
   return/assign/close/cancel/reopen, address comments, manage recurring tasks,
-  evaluate performance, settings, user management, audit read.
-- **ceo** (10): executive + standard dashboard, read-all tasks/reports/workload/
-  performance, comment, download attachments, notifications. **No task
-  authoring.**
-- **admin** (38): all permissions, including `roles.manage`.
+  evaluate performance, settings, user management, audit read, manage projects.
+- **ceo** (14): executive + standard dashboard, read-all tasks/reports, comment,
+  download attachments, notifications, **plus create tasks and request updates on
+  their own requests** (`tasks.create`, `tasks.request_update`). The CEO no
+  longer holds `workload.read_all` / `performance.read_all`.
+- **admin** (46): every permission **except** `tasks.request_update` (a CEO-only
+  nudge), including `roles.manage`.
 
-> **Permission reconciliation (verified against `supabase/seed.sql` /
-> `20260606171529_reference_data_seed.sql` — the canonical source).** The
-> per-role counts above match the seed exactly: **38** total permission keys;
-> **employee 15**, **section_head 35**, **ceo 10**, **admin 38**. No permission
-> grant was changed while reconciling these docs.
+> **Permission reconciliation (authoritative source: `docs/FEATURE_INVENTORY.md`,
+> computed by applying all migrations to a Postgres 16 replica and querying
+> `role_permissions`).** Catalogue: **47** total permission keys. Per-role grant
+> totals: **admin 46 · section_head 43 · employee 17 · ceo 14**. These supersede
+> the earlier "38 / 15 / 35 / 10" figures, which predated the project, CEO-role,
+> and template permission changes.
+>
+> **Permission tidy (this PR — migration `20260626140000`).** Three *decorative*
+> grants that nothing consults (`dashboard.executive` — the Executive view is
+> gated by `role = 'ceo'`; `task_comments.read` and `task_updates.read` — their
+> tables' visibility is enforced by task-visibility RLS) are removed from
+> `role_permissions`. The catalogue size is unchanged (47 keys; only grants are
+> removed). **Post-tidy per-role grant totals: admin 43 · section_head 41 ·
+> employee 15 · ceo 12.**
 >
 > **Decision item — `employee` holds `reports.read`.** The seed grants
 > `reports.read` to `employee` (alongside `workload.read` and

@@ -751,6 +751,7 @@ export type Database = {
           created_at: string
           id: string
           is_addressed: boolean
+          mentioned_user_ids: string[]
           task_id: string
           updated_at: string
         }
@@ -764,6 +765,7 @@ export type Database = {
           created_at?: string
           id?: string
           is_addressed?: boolean
+          mentioned_user_ids?: string[]
           task_id: string
           updated_at?: string
         }
@@ -777,6 +779,7 @@ export type Database = {
           created_at?: string
           id?: string
           is_addressed?: boolean
+          mentioned_user_ids?: string[]
           task_id?: string
           updated_at?: string
         }
@@ -1098,6 +1101,13 @@ export type Database = {
         }[]
       }
       get_my_permissions: { Args: never; Returns: string[] }
+      task_mentionable_users: {
+        Args: { p_task_id: string }
+        Returns: {
+          id: string
+          display_name: string
+        }[]
+      }
       request_dashboard_update: { Args: { p_assignee?: string }; Returns: Json }
       notify_role: {
         Args: {
@@ -1138,6 +1148,7 @@ export type Database = {
         | "task_cancelled"
         | "task_reopened"
         | "comment_added"
+        | "mention"
         | "system"
       recurrence_freq: "weekly" | "monthly" | "quarterly"
       task_priority: "low" | "medium" | "high" | "critical"
@@ -1297,6 +1308,7 @@ export const Constants = {
         "task_cancelled",
         "task_reopened",
         "comment_added",
+        "mention",
         "system",
       ],
       recurrence_freq: ["weekly", "monthly", "quarterly"],

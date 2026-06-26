@@ -110,16 +110,19 @@ inline "Access restricted" `EmptyState` (not a redirect), except where noted.
 
 ## 4. Permission catalog (computed from migrations)
 
-**Catalogue total: 47 keys.** Per-role grant totals (authoritative, from the
-replica): **admin 46 · section_head 43 · employee 17 · ceo 14.** `admin` holds
-every key **except `tasks.request_update`** (a CEO-only nudge). Roles holding each
-key:
+**Catalogue total: 47 keys.** Per-role grant totals: **admin 43 · section_head 41
+· employee 15 · ceo 12** (after the permission-tidy migration `20260626140000`,
+which removed three decorative grants — see Flags below; pre-tidy totals were
+**admin 46 · section_head 43 · employee 17 · ceo 14**). `admin` holds every
+remaining key **except `tasks.request_update`** (a CEO-only nudge). The matrix
+below shows grants **after** the tidy (a `—†` marks a cell the tidy cleared).
+Roles holding each key:
 
 | Module | Key | admin | section_head | employee | ceo |
 |---|---|:--:|:--:|:--:|:--:|
 | dashboard | dashboard.view | ✓ | ✓ | ✓ | ✓ |
 | dashboard | dashboard.read | ✓ | ✓ | — | ✓ |
-| dashboard | dashboard.executive | ✓ | — | — | ✓ |
+| dashboard | dashboard.executive | —† | — | — | —† |
 | dashboard | dashboard.upload | ✓ | ✓ | — | — |
 | dashboard | dashboard.request_update | ✓ | ✓ | — | ✓ |
 | tasks | tasks.create | ✓ | ✓ | ✓ | ✓ |
@@ -130,8 +133,10 @@ key:
 | tasks | tasks.approve / reject / return / assign / close / cancel / reopen | ✓ | ✓ | — | — |
 | tasks | tasks.submit_review | ✓ | ✓ | ✓ | — |
 | tasks | tasks.request_update | — | — | — | ✓ |
-| task_updates | task_updates.create / read | ✓ | ✓ | ✓ | — |
-| comments | task_comments.create / read | ✓ | ✓ | ✓ | ✓ |
+| task_updates | task_updates.create | ✓ | ✓ | ✓ | — |
+| task_updates | task_updates.read | —† | —† | —† | — |
+| comments | task_comments.create | ✓ | ✓ | ✓ | ✓ |
+| comments | task_comments.read | —† | —† | —† | —† |
 | comments | task_comments.address | ✓ | ✓ | — | — |
 | attachments | attachments.upload | ✓ | ✓ | ✓ | — |
 | attachments | attachments.download | ✓ | ✓ | ✓ | ✓ |
@@ -155,7 +160,7 @@ key:
 
 **Flags:**
 - **Referenced-but-not-granted:** none (every `can(...)`/`authorize('...')` key exists in the catalogue).
-- **Granted-but-unused (no `can`/`authorize`/nav reference anywhere):** `dashboard.executive` (the Executive view is gated by `role === "ceo"`, **not** this key), `task_comments.read`, `task_updates.read` (their RLS uses task-visibility, not these keys). These are effectively decorative grants.
+- **Granted-but-unused — REMOVED in this PR (migration `20260626140000`):** `dashboard.executive` (the Executive view is gated by `role === "ceo"`, **not** this key), `task_comments.read`, `task_updates.read` (their RLS uses task-visibility, not these keys). These were decorative grants consulted nowhere; their `role_permissions` rows were deleted (the permission keys remain in the catalogue). Cells cleared by the tidy are marked `—†` above.
 
 ---
 

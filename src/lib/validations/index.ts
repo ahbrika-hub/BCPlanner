@@ -8,3 +8,4 @@ export * from "./recurring";
 export * from "./users";
 export * from "./settings";
 export * from "./saved-views";
+export * from "./comments";

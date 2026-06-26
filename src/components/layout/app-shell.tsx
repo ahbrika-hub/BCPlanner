@@ -1,5 +1,6 @@
 import { AppSidebar } from "@/components/layout/app-sidebar";
 import { AppTopbar } from "@/components/layout/app-topbar";
+import { CommandPalette } from "@/components/layout/command-palette";
 import { Toaster } from "@/components/ui/sonner";
 
 export function AppShell({
@@ -29,6 +30,7 @@ export function AppShell({
           <div className="mx-auto w-full max-w-6xl p-4 md:p-8">{children}</div>
         </main>
       </div>
+      <CommandPalette />
       <Toaster richColors position="top-right" />
     </div>
   );

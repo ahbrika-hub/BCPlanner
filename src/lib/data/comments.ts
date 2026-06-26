@@ -3,6 +3,43 @@ import "server-only";
 import { createClient } from "@/lib/supabase/server";
 import type { Tables, CommentWithAuthor } from "./types";
 
+/** A user who can see a task and may therefore be @mentioned on it. */
+export type MentionableUser = { id: string; display_name: string };
+
+/**
+ * Users who can SEE this task (created_by OR assignee OR holders of
+ * tasks.read_all) — the exact task-visibility audience, resolved by the
+ * SECURITY DEFINER `task_mentionable_users` function. The DB function also
+ * verifies the CALLER can see the task, so it never reveals an audience for a
+ * task the caller cannot access. This is the source for the picker AND, re-run
+ * inside addCommentAction, the gate on who may actually be notified.
+ */
+export async function listMentionableUsers(
+  taskId: string,
+): Promise<MentionableUser[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("task_mentionable_users", {
+    p_task_id: taskId,
+  });
+  if (error) throw new Error(error.message);
+  return data ?? [];
+}
+
+/** Resolve a set of user ids to {id, full_name} for rendering mention chips. */
+export async function getDisplayNames(
+  ids: string[],
+): Promise<{ id: string; full_name: string }[]> {
+  const unique = [...new Set(ids)];
+  if (unique.length === 0) return [];
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("id, full_name")
+    .in("id", unique);
+  if (error) throw new Error(error.message);
+  return data ?? [];
+}
+
 export async function listComments(
   taskId: string,
 ): Promise<CommentWithAuthor[]> {
