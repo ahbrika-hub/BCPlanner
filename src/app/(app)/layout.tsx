@@ -6,6 +6,7 @@ import {
   getCurrentPermissions,
 } from "@/lib/auth/session";
 import { getUnreadCount } from "@/lib/data/notifications";
+import { listSavedViews } from "@/lib/data/saved-views";
 import { SessionProvider } from "@/components/providers/session-provider";
 import { AppShell } from "@/components/layout/app-shell";
 
@@ -24,10 +25,11 @@ export default async function AppLayout({
   // Independent of one another (profile, permissions, and the unread badge),
   // so fetch them in parallel. `getCurrentUser()` is `cache()`-wrapped, so the
   // profile fetch reuses the session already resolved above.
-  const [profile, permissions, unreadCount] = await Promise.all([
+  const [profile, permissions, unreadCount, savedViews] = await Promise.all([
     getCurrentProfile(),
     getCurrentPermissions(),
     getUnreadCount(),
+    listSavedViews(),
   ]);
 
   if (!profile || !profile.is_active) {
@@ -39,7 +41,7 @@ export default async function AppLayout({
   }
 
   return (
-    <SessionProvider value={{ user, profile, permissions }}>
+    <SessionProvider value={{ user, profile, permissions, savedViews }}>
       <AppShell unreadCount={unreadCount}>
         {children}
         {modal}

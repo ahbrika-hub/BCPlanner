@@ -13,6 +13,7 @@ import type { TaskPriority } from "@/lib/data/types";
 import { PageHeader } from "@/components/layout/page-header";
 import { TaskFilters } from "@/components/tasks/task-filters";
 import { TasksTable } from "@/components/tasks/tasks-table";
+import { SavedViewControls } from "@/components/tasks/saved-view-controls";
 import { CeoTasksView } from "@/components/tasks/ceo-tasks-view";
 import { NewTaskDialogLazy } from "@/components/tasks/new-task-dialog-lazy";
 import { RequestTaskDialog } from "@/components/tasks/request-task-dialog";
@@ -85,14 +86,17 @@ export default async function TasksPage({
         title="Tasks"
         subtitle="Create, track, and manage tasks"
         actions={
-          can("tasks.create", permissions) ? (
-            <NewTaskDialogLazy
-              businessLines={businessLines}
-              users={users}
-              projects={projects}
-              templates={templateOptions}
-            />
-          ) : null
+          <div className="flex items-center gap-2">
+            <SavedViewControls />
+            {can("tasks.create", permissions) ? (
+              <NewTaskDialogLazy
+                businessLines={businessLines}
+                users={users}
+                projects={projects}
+                templates={templateOptions}
+              />
+            ) : null}
+          </div>
         }
       />
 
