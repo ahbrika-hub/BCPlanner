@@ -4,6 +4,7 @@ import { createContext, useContext } from "react";
 import type { User } from "@supabase/supabase-js";
 
 import type { Database } from "@/types/database.types";
+import type { SavedView } from "@/lib/data/saved-views";
 
 type Profile = Database["public"]["Tables"]["profiles"]["Row"];
 
@@ -11,6 +12,8 @@ export type SessionValue = {
   user: User;
   profile: Profile;
   permissions: string[];
+  /** The caller's personal saved views (Tasks list), oldest first. */
+  savedViews: SavedView[];
 };
 
 const SessionContext = createContext<SessionValue | null>(null);

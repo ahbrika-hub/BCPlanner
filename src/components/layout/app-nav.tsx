@@ -2,9 +2,11 @@
 
 import { useId } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
+import { Bookmark } from "lucide-react";
 
 import { cn } from "@/lib/utils";
+import { configToQueryString } from "@/lib/tasks/saved-view-config";
 import { useSession } from "@/components/providers/session-provider";
 import { navSections, canSeeNavItem } from "@/components/layout/nav-config";
 import {
@@ -21,8 +23,10 @@ export function AppNav({
   onNavigate?: () => void;
 }) {
   const pathname = usePathname();
-  const { permissions } = useSession();
+  const searchParams = useSearchParams();
+  const { permissions, savedViews } = useSession();
   const labelId = useId();
+  const activeViewId = searchParams.get("view");
 
   // Only sections with at least one permitted item are rendered (no disabled
   // rows). Visibility derives purely from the session permission set.
@@ -91,6 +95,16 @@ export function AppNav({
                   </Link>
                 );
 
+                // Personal saved views render as indented sub-links under the
+                // Tasks item (expanded sidebar only). They inherit the Tasks
+                // item's permission gate — only shown because Tasks is shown —
+                // and link to /tasks with the view's stored query string so the
+                // existing list filtering does the work. Empty → nothing extra.
+                const showSavedViews =
+                  item.href === "/tasks" &&
+                  !collapsed &&
+                  savedViews.length > 0;
+
                 return (
                   <li key={item.href}>
                     {collapsed ? (
@@ -102,6 +116,41 @@ export function AppNav({
                       </Tooltip>
                     ) : (
                       link
+                    )}
+                    {showSavedViews && (
+                      <ul role="list" className="mt-1 flex flex-col gap-0.5">
+                        {savedViews.map((view) => {
+                          const qs = configToQueryString(view.config);
+                          const href = `/tasks?${qs ? `${qs}&` : ""}view=${view.id}`;
+                          const viewActive =
+                            pathname === "/tasks" &&
+                            activeViewId === view.id;
+                          return (
+                            <li key={view.id}>
+                              <Link
+                                href={href}
+                                onClick={onNavigate}
+                                aria-current={viewActive ? "page" : undefined}
+                                className={cn(
+                                  "flex items-center gap-2 rounded-md py-1.5 pr-3 pl-9 text-sm",
+                                  "transition-colors motion-reduce:transition-none",
+                                  "focus-visible:ring-ring/50 outline-none focus-visible:ring-2",
+                                  "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+                                  viewActive
+                                    ? "bg-sidebar-accent text-sidebar-accent-foreground"
+                                    : "text-sidebar-foreground/70",
+                                )}
+                              >
+                                <Bookmark
+                                  className="size-3.5 shrink-0"
+                                  aria-hidden="true"
+                                />
+                                <span className="truncate">{view.name}</span>
+                              </Link>
+                            </li>
+                          );
+                        })}
+                      </ul>
                     )}
                   </li>
                 );
