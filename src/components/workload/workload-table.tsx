@@ -4,6 +4,7 @@ import { useState } from "react";
 
 import { cn } from "@/lib/utils";
 import type { WorkloadRow } from "@/lib/data/types";
+import { UTILIZATION_BAND } from "@/lib/workload/compute";
 import { Progress } from "@/components/ui/progress";
 import { TokenPill } from "@/components/ui/token-pill";
 import { DrilldownDialog } from "@/components/dashboard/drilldown-dialog";
@@ -16,16 +17,18 @@ import {
   TableRow,
 } from "@/components/ui/table";
 
-// Workload level → semantic state token (shared TokenPill anatomy).
+// Utilization band → semantic state token (hours-vs-capacity; see
+// UTILIZATION_BAND). Color is paired with a text label (never color-only) for
+// accessibility.
 const levelColor: Record<string, string> = {
   high: "var(--color-danger)",
   medium: "var(--color-warning)",
   low: "var(--color-success)",
 };
 const levelLabel: Record<string, string> = {
-  high: "High",
-  medium: "Medium",
-  low: "Low",
+  high: "Over capacity",
+  medium: "Near capacity",
+  low: "Under capacity",
 };
 
 /**
@@ -46,6 +49,34 @@ export function WorkloadTable({ rows }: { rows: WorkloadRow[] }) {
 
   return (
     <>
+      {/* Band legend (cutoffs stated; color is paired with a label). */}
+      <div className="text-muted-foreground mb-3 flex flex-wrap items-center gap-3 text-xs">
+        <span>Utilization band:</span>
+        <span className="inline-flex items-center gap-1">
+          <span
+            className="size-2.5 rounded-full"
+            style={{ background: levelColor.low }}
+            aria-hidden="true"
+          />
+          Under capacity (&lt;{UTILIZATION_BAND.near}%)
+        </span>
+        <span className="inline-flex items-center gap-1">
+          <span
+            className="size-2.5 rounded-full"
+            style={{ background: levelColor.medium }}
+            aria-hidden="true"
+          />
+          Near capacity ({UTILIZATION_BAND.near}–{UTILIZATION_BAND.over}%)
+        </span>
+        <span className="inline-flex items-center gap-1">
+          <span
+            className="size-2.5 rounded-full"
+            style={{ background: levelColor.high }}
+            aria-hidden="true"
+          />
+          Over capacity (&gt;{UTILIZATION_BAND.over}%)
+        </span>
+      </div>
       <div className="rounded-lg border">
         <Table stickyFirstColumn>
           <TableHeader>
@@ -68,7 +99,12 @@ export function WorkloadTable({ rows }: { rows: WorkloadRow[] }) {
                   className={cn(clickable && "hover:bg-muted/50 cursor-pointer")}
                   onClick={clickable ? () => open(r) : undefined}
                 >
-                  <TableCell className="font-medium">
+                  <TableCell
+                    className="font-medium"
+                    style={{
+                      boxShadow: `inset 4px 0 0 0 ${levelColor[lvl] ?? "transparent"}`,
+                    }}
+                  >
                     {clickable ? (
                       <button
                         type="button"

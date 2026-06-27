@@ -12,6 +12,7 @@ import {
   Shield,
   FolderKanban,
   LayoutTemplate,
+  CalendarDays,
   type LucideIcon,
 } from "lucide-react";
 
@@ -136,6 +137,12 @@ export const navSections: NavSection[] = [
         href: "/admin/templates",
         icon: LayoutTemplate,
         permission: "templates.manage",
+      },
+      {
+        label: "Holidays",
+        href: "/admin/holidays",
+        icon: CalendarDays,
+        permission: "settings.manage",
       },
       {
         label: "Settings",

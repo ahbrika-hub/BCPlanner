@@ -78,7 +78,7 @@ describe("aggregateEmployeeWorkload", () => {
     expect(agg.total_estimated_hours).toBe(14);
     expect(agg.capacity_hours).toBe(40); // 5 working days × 8h
     expect(agg.utilization_pct).toBe(35); // 14/40*100
-    expect(agg.workload_level).toBe("medium"); // count 3 > 2
+    expect(agg.workload_level).toBe("low"); // 35% utilization → under capacity
   });
 
   it("empty range → no capacity, zero utilization", () => {
@@ -87,12 +87,75 @@ describe("aggregateEmployeeWorkload", () => {
     expect(agg.utilization_pct).toBe(0);
   });
 
-  it("levels: >5 high, >2 medium, else low (single-day range)", () => {
-    const day = (n: number) =>
-      Array.from({ length: n }, () => mk(1, "2026-06-15", "2026-06-15"));
-    expect(aggregateEmployeeWorkload(day(6), "2026-06-15", "2026-06-15").workload_level).toBe("high");
-    expect(aggregateEmployeeWorkload(day(3), "2026-06-15", "2026-06-15").workload_level).toBe("medium");
-    expect(aggregateEmployeeWorkload(day(1), "2026-06-15", "2026-06-15").workload_level).toBe("low");
+  it("levels derive from HOURS-vs-capacity utilization, not task count", () => {
+    // Mon 2026-06-15 single working day → 8h capacity.
+    const one = (h: number) => [mk(h, "2026-06-15", "2026-06-15")];
+    expect(
+      aggregateEmployeeWorkload(one(4), "2026-06-15", "2026-06-15")
+        .workload_level,
+    ).toBe("low"); // 50% < 80
+    expect(
+      aggregateEmployeeWorkload(one(7), "2026-06-15", "2026-06-15")
+        .workload_level,
+    ).toBe("medium"); // 87.5% (80–100)
+    expect(
+      aggregateEmployeeWorkload(one(10), "2026-06-15", "2026-06-15")
+        .workload_level,
+    ).toBe("high"); // 125% > 100
+    // Many small tasks no longer force a high band (count is secondary).
+    const sixLight = Array.from({ length: 6 }, () =>
+      mk(0.5, "2026-06-15", "2026-06-15"),
+    );
+    const agg = aggregateEmployeeWorkload(sixLight, "2026-06-15", "2026-06-15");
+    expect(agg.active_task_count).toBe(6);
+    expect(agg.workload_level).toBe("low"); // 3h / 8h = 37.5%
+  });
+
+  it("NULL effort contributes 0 hours but is still counted", () => {
+    const agg = aggregateEmployeeWorkload(
+      [mk(null, "2026-06-15", "2026-06-15"), mk(null, "2026-06-15", "2026-06-15")],
+      "2026-06-15",
+      "2026-06-15",
+    );
+    expect(agg.active_task_count).toBe(2);
+    expect(agg.total_estimated_hours).toBe(0);
+    expect(agg.utilization_pct).toBe(0);
+    expect(agg.workload_level).toBe("low");
+  });
+});
+
+describe("public holidays reduce working days / capacity (central helper)", () => {
+  it("subtracts a holiday falling on a working day", () => {
+    // Sun 06-14 .. Thu 06-18 = 5 working days; 06-16 (Tue) holiday → 4.
+    expect(countWorkingDays("2026-06-14", "2026-06-18")).toBe(5);
+    expect(countWorkingDays("2026-06-14", "2026-06-18", ["2026-06-16"])).toBe(4);
+    expect(capacityHours("2026-06-14", "2026-06-18", ["2026-06-16"])).toBe(32);
+  });
+  it("ignores a holiday that lands on an already-off weekend day", () => {
+    // 06-19 is Friday (already non-working) → no change.
+    expect(countWorkingDays("2026-06-14", "2026-06-18", ["2026-06-19"])).toBe(5);
+  });
+  it("flows into utilization (holiday week vs normal week)", () => {
+    const tasks: WorkloadTaskInput[] = [
+      {
+        estimated_effort_hours: 32,
+        start_date: "2026-06-14",
+        due_date: "2026-06-18",
+        created_at: "2026-06-14T00:00:00Z",
+      },
+    ];
+    const normal = aggregateEmployeeWorkload(tasks, "2026-06-14", "2026-06-18");
+    expect(normal.capacity_hours).toBe(40);
+    expect(normal.utilization_pct).toBe(80); // 32/40
+    const holiday = aggregateEmployeeWorkload(
+      tasks,
+      "2026-06-14",
+      "2026-06-18",
+      ["2026-06-16"],
+    );
+    expect(holiday.capacity_hours).toBe(32);
+    expect(holiday.utilization_pct).toBe(100); // 32/32 — holiday raised utilization
+    expect(holiday.workload_level).toBe("medium");
   });
 });
 

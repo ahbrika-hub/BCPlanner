@@ -465,6 +465,30 @@ export type Database = {
           },
         ]
       }
+      public_holidays: {
+        Row: {
+          created_at: string
+          holiday_date: string
+          id: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          holiday_date: string
+          id?: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          holiday_date?: string
+          id?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       saved_views: {
         Row: {
           config: Json

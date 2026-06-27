@@ -10,15 +10,24 @@ const tasksResult = vi.hoisted(() => ({ value: { data: [] as unknown[], error: n
 
 vi.mock("@/lib/auth/session", () => session);
 vi.mock("@/lib/supabase/server", () => {
-  const makeQuery = () => {
+  const thenable = (value: unknown) => {
     const q: Record<string, unknown> = {};
-    for (const m of ["select", "eq", "in", "neq"]) q[m] = vi.fn(() => q);
-    // thenable → resolves to the configured tasks result
+    for (const m of ["select", "eq", "in", "neq", "gte", "lte"])
+      q[m] = vi.fn(() => q);
     (q as { then: unknown }).then = (resolve: (v: unknown) => void) =>
-      resolve(tasksResult.value);
+      resolve(value);
     return q;
   };
-  return { createClient: vi.fn(async () => ({ from: vi.fn(() => makeQuery()) })) };
+  return {
+    createClient: vi.fn(async () => ({
+      // public_holidays → no holidays in tests; any other table → tasks result.
+      from: vi.fn((table: string) =>
+        table === "public_holidays"
+          ? thenable({ data: [], error: null })
+          : thenable(tasksResult.value),
+      ),
+    })),
+  };
 });
 
 import { getAssigneeWorkloadAction } from "@/lib/actions/assignee-workload";
