@@ -10,3 +10,4 @@ export * from "./settings";
 export * from "./saved-views";
 export * from "./comments";
 export * from "./holidays";
+export * from "./project-templates";
