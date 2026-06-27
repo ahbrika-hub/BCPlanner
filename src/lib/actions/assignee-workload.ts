@@ -53,8 +53,14 @@ export async function getAssigneeWorkloadAction(
   const { data, error } = await query;
   if (error) return null;
 
-  // Public holidays in range — subtracted from capacity by the central helper.
-  const holidays = await listHolidayDates(from, to);
+  // Keep the action's null-on-failure contract: listHolidayDates throws on a
+  // read error, so guard it (a holiday-table hiccup must not reject the preview).
+  let holidays: string[];
+  try {
+    holidays = await listHolidayDates(from, to);
+  } catch {
+    return null;
+  }
 
   // Map to the aggregation input — drop the id, never surface task identity.
   return aggregateEmployeeWorkload(

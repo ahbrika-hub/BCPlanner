@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { GripVertical } from "lucide-react";
@@ -37,12 +37,33 @@ export function ReassignBoard({
   const [pending, startTransition] = useTransition();
   const [dragOver, setDragOver] = useState<string | null>(null);
 
-  const nameById = new Map(employees.map((e) => [e.id, e.full_name]));
+  // Resync when the server data changes (e.g. after router.refresh()) so the
+  // optimistic copy can't drift — React's "adjust state while rendering" pattern
+  // (a new initialTasks reference arrives only from a server re-render), which
+  // avoids a setState-in-effect.
+  const [prevInitial, setPrevInitial] = useState(initialTasks);
+  if (prevInitial !== initialTasks) {
+    setPrevInitial(initialTasks);
+    setTasks(initialTasks);
+  }
 
-  const columns: { key: string; label: string }[] = [
-    { key: UNASSIGNED, label: "Unassigned" },
-    ...employees.map((e) => ({ key: e.id, label: e.full_name })),
-  ];
+  // Columns: every active employee, plus any assignee referenced by a task who
+  // isn't in the active set (e.g. a deactivated user) — otherwise their tasks
+  // would have no column and silently vanish. Names resolve from the employee
+  // list first, then the task's own assignee_name.
+  const { columns, nameById } = useMemo(() => {
+    const names = new Map(employees.map((e) => [e.id, e.full_name]));
+    for (const t of tasks) {
+      if (t.assignee_id && !names.has(t.assignee_id)) {
+        names.set(t.assignee_id, t.assignee_name ?? "Unknown");
+      }
+    }
+    const cols: { key: string; label: string }[] = [
+      { key: UNASSIGNED, label: "Unassigned" },
+      ...[...names.entries()].map(([key, label]) => ({ key, label })),
+    ];
+    return { columns: cols, nameById: names };
+  }, [employees, tasks]);
 
   const tasksFor = (key: string) =>
     tasks.filter((t) =>
@@ -52,12 +73,15 @@ export function ReassignBoard({
   const onDrop = (e: React.DragEvent, targetKey: string) => {
     e.preventDefault();
     setDragOver(null);
+    // Ignore drops onto "nobody", or while a reassignment is in flight (avoids
+    // overlapping optimistic updates clobbering each other).
+    if (targetKey === UNASSIGNED || pending) return;
     const taskId = e.dataTransfer.getData("text/plain");
-    if (!taskId || targetKey === UNASSIGNED) return; // can't assign to nobody
+    if (!taskId) return;
     const task = tasks.find((t) => t.id === taskId);
     if (!task || task.assignee_id === targetKey) return;
 
-    const previous = tasks;
+    const previousAssignee = task.assignee_id;
     // Optimistic move.
     setTasks((cur) =>
       cur.map((t) => (t.id === taskId ? { ...t, assignee_id: targetKey } : t)),
@@ -73,7 +97,12 @@ export function ReassignBoard({
         );
         router.refresh();
       } else {
-        setTasks(previous); // revert
+        // Revert only the moved task (don't clobber other in-flight changes).
+        setTasks((cur) =>
+          cur.map((t) =>
+            t.id === taskId ? { ...t, assignee_id: previousAssignee } : t,
+          ),
+        );
         toast.error(res.error);
       }
     });

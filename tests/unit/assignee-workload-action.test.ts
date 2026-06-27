@@ -7,6 +7,7 @@ const session = vi.hoisted(() => ({
   getCurrentPermissions: vi.fn(),
 }));
 const tasksResult = vi.hoisted(() => ({ value: { data: [] as unknown[], error: null as unknown } }));
+const holidayResult = vi.hoisted(() => ({ value: { data: [] as unknown[], error: null as unknown } }));
 
 vi.mock("@/lib/auth/session", () => session);
 vi.mock("@/lib/supabase/server", () => {
@@ -20,10 +21,10 @@ vi.mock("@/lib/supabase/server", () => {
   };
   return {
     createClient: vi.fn(async () => ({
-      // public_holidays → no holidays in tests; any other table → tasks result.
+      // public_holidays → configurable per test; any other table → tasks result.
       from: vi.fn((table: string) =>
         table === "public_holidays"
-          ? thenable({ data: [], error: null })
+          ? thenable(holidayResult.value)
           : thenable(tasksResult.value),
       ),
     })),
@@ -39,6 +40,7 @@ beforeEach(() => {
   session.getCurrentProfile.mockResolvedValue({ id: "creator", role: "section_head" });
   session.getCurrentPermissions.mockResolvedValue(["tasks.create"]);
   tasksResult.value = { data: [], error: null };
+  holidayResult.value = { data: [], error: null };
 });
 
 describe("getAssigneeWorkloadAction", () => {
@@ -76,6 +78,33 @@ describe("getAssigneeWorkloadAction", () => {
       "workload_level",
     ]);
     expect(JSON.stringify(res)).not.toContain("Secret");
+  });
+
+  it("subtracts a public holiday in range from capacity", async () => {
+    // One 16h task spanning the work-week; 2026-06-10 (Wed) is a holiday.
+    tasksResult.value = {
+      data: [
+        {
+          id: "t1",
+          estimated_effort_hours: 16,
+          start_date: "2026-06-09",
+          due_date: "2026-06-14",
+          created_at: "2026-06-09T00:00:00Z",
+        },
+      ],
+      error: null,
+    };
+    holidayResult.value = {
+      data: [{ holiday_date: "2026-06-10" }],
+      error: null,
+    };
+    const res = await getAssigneeWorkloadAction({
+      assigneeId: ASSIGNEE,
+      from: "2026-06-08",
+      to: "2026-06-14",
+    });
+    // 5 working days → 4 after the holiday → 32h capacity; util 16/32 = 50%.
+    expect(res).toMatchObject({ capacity_hours: 32, utilization_pct: 50 });
   });
 
   it("denies when the caller lacks tasks.create", async () => {

@@ -84,7 +84,11 @@ adjustment by passing the holiday set):
 
 The overdue-digest cron (previous PR) was checked — it does **not** use the
 capacity helper (it has no capacity calculation), so there is nothing to inherit
-there. There is exactly **one** capacity calculation in the codebase.
+there. There is exactly **one holiday-aware capacity calculation** in the
+codebase — the central `compute.ts` helper (working-days − holidays). The
+single-day operational view `daily_employee_workload` computes its own 8h-day
+utilization for the dashboard widget and intentionally does not subtract holidays
+(a single day is either a holiday or not); see §10.
 
 ---
 
@@ -99,6 +103,7 @@ there. There is exactly **one** capacity calculation in the codebase.
   | Under capacity | `< 80%` | low | `--color-success` (green) | "Under capacity" |
   | Near capacity | `80–100%` | medium | `--color-warning` (amber) | "Near capacity" |
   | Over capacity | `> 100%` | high | `--color-danger` (red) | "Over capacity" |
+
   Color is always paired with the band label (pill), a colored left-border cue,
   and a legend stating the cutoffs — never color-only.
 - **NULL effort:** a task with `estimated_effort_hours = NULL` contributes **0
@@ -119,6 +124,13 @@ admin 43 · section_head 41 · employee 15 · ceo 12). Read is open to all
 authenticated users (`using (true)`) because capacity is shown to every workload
 viewer and holiday dates are non-sensitive.
 
+This intentionally lets `section_head` (not only `admin`) edit holidays, exactly
+as they already manage the other shared reference tables (`business_lines`,
+`app_settings`, `projects`). That is consistent with the established convention
+and the task's "reuse `settings.manage`" guidance. If holidays should later be
+admin-only, that is a deliberate future change (a dedicated `holidays.manage` key
+granted to admin only) — out of scope here.
+
 ---
 
 ## 7. Seeded 2026 holidays
@@ -138,7 +150,7 @@ authoritative; an admin should correct them once officially announced.
 
 ## 8. Gate A — actual output
 
-```
+```text
 npm run lint       → exit 0 (no errors)
 npm run typecheck  → exit 0
 npm run test       → Test Files 40 passed (40) · Tests 193 passed (193)
@@ -148,7 +160,7 @@ npm run build      → exit 0 ; new route: ├ ƒ /admin/holidays
 `tailwind-merge` stays `^3.6.0` (3.x); `package.json`/lock unchanged.
 
 Focused new/updated tests:
-```
+```text
 ✓ aggregateEmployeeWorkload > levels derive from HOURS-vs-capacity utilization, not task count
 ✓ aggregateEmployeeWorkload > NULL effort contributes 0 hours but is still counted
 ✓ public holidays reduce working days / capacity > subtracts a holiday falling on a working day
@@ -169,7 +181,7 @@ Fresh PostgreSQL **16.13** cluster; prod-only roles + `auth`/`storage` shims via
 ### Capacity math — holiday vs non-holiday week (central helper)
 The helper is pure TS; its math is proven by unit test (run under Gate A), and
 the replica proves the holiday-date **inputs** it receives:
-```
+```text
 -- central helper (unit test):
 countWorkingDays('2026-06-14','2026-06-18')                 = 5   (normal week)
 countWorkingDays('2026-06-14','2026-06-18', ['2026-06-16']) = 4   (holiday week)
@@ -183,7 +195,7 @@ normal week       2026-06-14..2026-06-18 → 0 holidays
 A non-holiday (normal) week is unchanged (5 working days / 40h).
 
 ### Effort-HOURS bands via `daily_employee_workload` (replica)
-```
+```text
    full_name    | active_task_count | total_estimated_hours | utilization_pct | workload_level
 ----------------+-------------------+-----------------------+-----------------+----------------
  Emp Over       |                 1 |                 10.00 |           125.0 | high
@@ -196,7 +208,7 @@ task → 0h but is still counted (count 1). "Emp Over" also has a `completed` 99
 task that is correctly **excluded** (count 1, not 2; terminal status).
 
 ### `public_holidays` RLS
-```
+```text
 2026 holiday rows seeded: 10
 -- employee (no settings.manage):
  employee_can_read = 10
@@ -213,7 +225,7 @@ Unit test: `transitionTaskAction(id,"assign",…)` returns `Not authorized.` for
 caller without `tasks.assign` (before any DB transition — guard/notifications
 untouched); the assign affordance is offered only to `tasks.assign` holders.
 Replica (the transition guard the drop hits):
-```
+```text
 LEGAL  approved -> assigned  : OK; assignee updated
 BLOCKED in_progress -> assigned : Illegal task status transition: in_progress -> assigned
 ```
@@ -222,7 +234,7 @@ Only `approved`/`reopened`/`assigned` tasks are offered as drag sources
 reverts + toasts.
 
 ### Lifecycle untouched
-```
+```text
 BLOCKED as expected: Illegal task status transition: draft -> completed
 ```
 A legal transition still passes and an illegal one still raises — the

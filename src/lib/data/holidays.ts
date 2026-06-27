@@ -65,9 +65,12 @@ export async function updateHoliday(
 
 export async function deleteHoliday(id: string): Promise<void> {
   const supabase = await createClient();
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from("public_holidays")
     .delete()
-    .eq("id", id);
+    .eq("id", id)
+    .select("id");
   if (error) throw new Error(error.message);
+  // A no-op delete (already gone, or not visible) must not report success.
+  if (!data || data.length === 0) throw new Error("Holiday not found.");
 }

@@ -156,14 +156,16 @@ export function aggregateEmployeeWorkload(
     count += 1;
     hours += Number(t.estimated_effort_hours ?? 0) || 0;
   }
-  const utilization_pct =
-    capacity > 0 ? Math.round((hours / capacity) * 1000) / 10 : 0;
+  // Band off the RAW percentage (the rounded display value could flip an edge
+  // case across the 80/100 cutoffs); keep the rounded value for display only.
+  const rawUtilization = capacity > 0 ? (hours / capacity) * 100 : 0;
+  const utilization_pct = Math.round(rawUtilization * 10) / 10;
   return {
     active_task_count: count,
     total_estimated_hours: Math.round(hours * 100) / 100,
     capacity_hours: capacity,
     utilization_pct,
-    workload_level: levelForUtilization(utilization_pct),
+    workload_level: levelForUtilization(rawUtilization),
   };
 }
 

@@ -122,16 +122,24 @@ export function HolidaysManager({ rows }: { rows: HolidayRow[] }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
 
+  const errMsg = (e: unknown) =>
+    e instanceof Error ? e.message : "Something went wrong.";
+
   const create = (values: FormValues) =>
     new Promise<boolean>((resolve) => {
       startTransition(async () => {
-        const res = await createHolidayAction(values);
-        if (res.ok) {
-          toast.success("Holiday added");
-          router.refresh();
-          resolve(true);
-        } else {
-          toast.error(res.error);
+        try {
+          const res = await createHolidayAction(values);
+          if (res.ok) {
+            toast.success("Holiday added");
+            router.refresh();
+            resolve(true);
+          } else {
+            toast.error(res.error);
+            resolve(false);
+          }
+        } catch (e) {
+          toast.error(errMsg(e));
           resolve(false);
         }
       });
@@ -140,13 +148,18 @@ export function HolidaysManager({ rows }: { rows: HolidayRow[] }) {
   const edit = (id: string, values: FormValues) =>
     new Promise<boolean>((resolve) => {
       startTransition(async () => {
-        const res = await updateHolidayAction({ id, ...values });
-        if (res.ok) {
-          toast.success("Holiday updated");
-          router.refresh();
-          resolve(true);
-        } else {
-          toast.error(res.error);
+        try {
+          const res = await updateHolidayAction({ id, ...values });
+          if (res.ok) {
+            toast.success("Holiday updated");
+            router.refresh();
+            resolve(true);
+          } else {
+            toast.error(res.error);
+            resolve(false);
+          }
+        } catch (e) {
+          toast.error(errMsg(e));
           resolve(false);
         }
       });
@@ -154,12 +167,16 @@ export function HolidaysManager({ rows }: { rows: HolidayRow[] }) {
 
   const remove = (id: string) =>
     startTransition(async () => {
-      const res = await deleteHolidayAction(id);
-      if (res.ok) {
-        toast.success("Holiday deleted");
-        router.refresh();
-      } else {
-        toast.error(res.error);
+      try {
+        const res = await deleteHolidayAction(id);
+        if (res.ok) {
+          toast.success("Holiday deleted");
+          router.refresh();
+        } else {
+          toast.error(res.error);
+        }
+      } catch (e) {
+        toast.error(errMsg(e));
       }
     });
 

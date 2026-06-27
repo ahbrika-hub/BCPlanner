@@ -38,6 +38,9 @@ export type ReassignableTask = {
   title: string;
   status: string;
   assignee_id: string | null;
+  /** Current assignee's name (so the board can still render a column for an
+   *  assignee who isn't in the active-profile set, e.g. a deactivated user). */
+  assignee_name: string | null;
 };
 
 /**
@@ -52,11 +55,23 @@ export async function getReassignableTasks(): Promise<ReassignableTask[]> {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("tasks")
-    .select("id, task_no, title, status, assignee_id")
+    .select(
+      "id, task_no, title, status, assignee_id, assignee:profiles!tasks_assignee_id_fkey(full_name)",
+    )
     .in("status", [...REASSIGNABLE_STATUSES])
     .order("task_no", { ascending: true });
   if (error) throw new Error(error.message);
-  return (data ?? []) as ReassignableTask[];
+  return (data ?? []).map((t) => {
+    const assignee = t.assignee as { full_name: string | null } | null;
+    return {
+      id: t.id,
+      task_no: t.task_no,
+      title: t.title,
+      status: t.status,
+      assignee_id: t.assignee_id,
+      assignee_name: assignee?.full_name ?? null,
+    };
+  });
 }
 
 /**
@@ -123,5 +138,12 @@ export async function getWorkloadForRange(filters: {
         workload_level: agg.workload_level,
       };
     })
-    .sort((a, b) => (b.active_task_count ?? 0) - (a.active_task_count ?? 0));
+    // Hours-vs-capacity is the primary signal now, so rank the most
+    // over-capacity employees first; fall back to hours, then count.
+    .sort(
+      (a, b) =>
+        (b.utilization_pct ?? 0) - (a.utilization_pct ?? 0) ||
+        (b.total_estimated_hours ?? 0) - (a.total_estimated_hours ?? 0) ||
+        (b.active_task_count ?? 0) - (a.active_task_count ?? 0),
+    );
 }
