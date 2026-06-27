@@ -6,6 +6,7 @@ import {
   aggregateEmployeeWorkload,
   type WorkloadTaskInput,
 } from "@/lib/workload/compute";
+import { listHolidayDates } from "@/lib/data/holidays";
 import type { WorkloadRow } from "./types";
 
 /**
@@ -28,6 +29,49 @@ export async function getWorkload(
   const { data, error } = await query;
   if (error) throw new Error(error.message);
   return (data ?? []) as WorkloadRow[];
+}
+
+/** A task that can be drag-reassigned (status where the 'assign' action is legal). */
+export type ReassignableTask = {
+  id: string;
+  task_no: string | null;
+  title: string;
+  status: string;
+  assignee_id: string | null;
+  /** Current assignee's name (so the board can still render a column for an
+   *  assignee who isn't in the active-profile set, e.g. a deactivated user). */
+  assignee_name: string | null;
+};
+
+/**
+ * Statuses from which the EXISTING 'assign' transition is legal (approved/reopened
+ * → assigned) or a no-op assignee change (assigned → assigned). Dragging a task
+ * in any other status would be rejected by the transition guard, so only these
+ * are offered as drag sources. RLS-scoped (managers with tasks.read_all see all).
+ */
+export const REASSIGNABLE_STATUSES = ["approved", "reopened", "assigned"] as const;
+
+export async function getReassignableTasks(): Promise<ReassignableTask[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("tasks")
+    .select(
+      "id, task_no, title, status, assignee_id, assignee:profiles!tasks_assignee_id_fkey(full_name)",
+    )
+    .in("status", [...REASSIGNABLE_STATUSES])
+    .order("task_no", { ascending: true });
+  if (error) throw new Error(error.message);
+  return (data ?? []).map((t) => {
+    const assignee = t.assignee as { full_name: string | null } | null;
+    return {
+      id: t.id,
+      task_no: t.task_no,
+      title: t.title,
+      status: t.status,
+      assignee_id: t.assignee_id,
+      assignee_name: assignee?.full_name ?? null,
+    };
+  });
 }
 
 /**
@@ -53,7 +97,7 @@ export async function getWorkloadForRange(filters: {
     profileQuery = profileQuery.ilike("full_name", `%${filters.search}%`);
   }
 
-  const [profilesRes, tasksRes] = await Promise.all([
+  const [profilesRes, tasksRes, holidays] = await Promise.all([
     profileQuery,
     supabase
       .from("tasks")
@@ -62,6 +106,8 @@ export async function getWorkloadForRange(filters: {
       )
       .in("status", ACTIVE_TASK_STATUSES)
       .not("assignee_id", "is", null),
+    // Public holidays in range — subtracted from capacity by the central helper.
+    listHolidayDates(filters.from, filters.to),
   ]);
   if (profilesRes.error) throw new Error(profilesRes.error.message);
   if (tasksRes.error) throw new Error(tasksRes.error.message);
@@ -80,6 +126,7 @@ export async function getWorkloadForRange(filters: {
         byAssignee.get(p.id) ?? [],
         filters.from,
         filters.to,
+        holidays,
       );
       return {
         employee_id: p.id,
@@ -91,5 +138,12 @@ export async function getWorkloadForRange(filters: {
         workload_level: agg.workload_level,
       };
     })
-    .sort((a, b) => (b.active_task_count ?? 0) - (a.active_task_count ?? 0));
+    // Hours-vs-capacity is the primary signal now, so rank the most
+    // over-capacity employees first; fall back to hours, then count.
+    .sort(
+      (a, b) =>
+        (b.utilization_pct ?? 0) - (a.utilization_pct ?? 0) ||
+        (b.total_estimated_hours ?? 0) - (a.total_estimated_hours ?? 0) ||
+        (b.active_task_count ?? 0) - (a.active_task_count ?? 0),
+    );
 }

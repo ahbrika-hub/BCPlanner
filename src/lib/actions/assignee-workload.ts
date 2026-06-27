@@ -10,6 +10,7 @@ import {
   aggregateEmployeeWorkload,
   type WorkloadAggregate,
 } from "@/lib/workload/compute";
+import { listHolidayDates } from "@/lib/data/holidays";
 
 const inputSchema = z.object({
   assigneeId: z.uuid(),
@@ -52,6 +53,15 @@ export async function getAssigneeWorkloadAction(
   const { data, error } = await query;
   if (error) return null;
 
+  // Keep the action's null-on-failure contract: listHolidayDates throws on a
+  // read error, so guard it (a holiday-table hiccup must not reject the preview).
+  let holidays: string[];
+  try {
+    holidays = await listHolidayDates(from, to);
+  } catch {
+    return null;
+  }
+
   // Map to the aggregation input — drop the id, never surface task identity.
   return aggregateEmployeeWorkload(
     (data ?? []).map((t) => ({
@@ -62,5 +72,6 @@ export async function getAssigneeWorkloadAction(
     })),
     from,
     to,
+    holidays,
   );
 }

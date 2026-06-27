@@ -25,6 +25,15 @@ export type WorkloadRange = { from: string; to: string; preset: WorkloadPreset }
 
 export type WorkloadLevel = "low" | "medium" | "high";
 
+/**
+ * Utilization band cutoffs (hours vs capacity), shared by the SQL view, the TS
+ * classifier, and the UI color cues so the three never drift:
+ *   under (low)   : utilization < NEAR  (under capacity)
+ *   near  (medium): NEAR ≤ utilization ≤ OVER  (near capacity)
+ *   over  (high)  : utilization > OVER  (over capacity)
+ */
+export const UTILIZATION_BAND = { near: 80, over: 100 } as const;
+
 export type WorkloadAggregate = {
   active_task_count: number;
   total_estimated_hours: number;
@@ -53,26 +62,50 @@ export function calendarDays(from: string, to: string): number {
 }
 
 /**
- * Inclusive count of WORKING days (SAPTCO work-week: Sunday–Thursday) between two
- * YYYY-MM-DD dates; Friday + Saturday are non-working (excluded). 0 if invalid or
- * inverted. NOTE: public holidays are out of scope (work-week only) — a known
- * future refinement, not built here.
+ * Inclusive count of WORKING days between two YYYY-MM-DD dates: the SAPTCO
+ * work-week is Sunday–Thursday (Friday + Saturday excluded), MINUS any public
+ * holidays that fall on an otherwise-working day. `holidays` is the set of
+ * holiday dates (YYYY-MM-DD) in/around the range — callers fetch it from
+ * public_holidays via listHolidayDates(). Omitting it preserves the original
+ * work-week-only behavior. Returns 0 if invalid or inverted.
+ *
+ * This is the SINGLE source of truth for working-day/capacity math; every caller
+ * (workload page, range workload aggregation, assignee-workload preview) inherits
+ * the holiday adjustment by passing the holiday set here.
  */
-export function countWorkingDays(from: string, to: string): number {
+export function countWorkingDays(
+  from: string,
+  to: string,
+  holidays?: Iterable<string>,
+): number {
   const start = Date.parse(`${isoDate(from)}T00:00:00Z`);
   const end = Date.parse(`${isoDate(to)}T00:00:00Z`);
   if (Number.isNaN(start) || Number.isNaN(end) || end < start) return 0;
+  const holidaySet =
+    holidays instanceof Set
+      ? (holidays as Set<string>)
+      : new Set(holidays ? [...holidays].map((d) => isoDate(d)) : []);
   let count = 0;
   for (let t = start; t <= end; t += 86_400_000) {
-    const dow = new Date(t).getUTCDay(); // 0=Sun … 5=Fri, 6=Sat
-    if (dow !== 5 && dow !== 6) count += 1;
+    const d = new Date(t);
+    const dow = d.getUTCDay(); // 0=Sun … 5=Fri, 6=Sat
+    if (dow === 5 || dow === 6) continue; // weekend
+    if (holidaySet.has(fmt(d))) continue; // public holiday
+    count += 1;
   }
   return count;
 }
 
-/** Available hours over a range = 8h × working days (Sun–Thu). */
-export function capacityHours(from: string, to: string): number {
-  return WORK_HOURS_PER_DAY * countWorkingDays(from, to);
+/**
+ * Available hours over a range = 8h × working days (Sun–Thu minus public
+ * holidays). Pass the holiday date set to subtract holidays from capacity.
+ */
+export function capacityHours(
+  from: string,
+  to: string,
+  holidays?: Iterable<string>,
+): number {
+  return WORK_HOURS_PER_DAY * countWorkingDays(from, to, holidays);
 }
 
 /**
@@ -91,20 +124,30 @@ export function taskOverlapsRange(
   return true;
 }
 
-function levelFor(count: number): WorkloadLevel {
-  // Same thresholds as the daily_employee_workload view (>5 high, >2 medium).
-  if (count > 5) return "high";
-  if (count > 2) return "medium";
+/**
+ * Classify load by HOURS-vs-capacity utilization % (not task count), per
+ * UTILIZATION_BAND: over (>100) = high, near (80–100) = medium, else low.
+ */
+export function levelForUtilization(utilizationPct: number): WorkloadLevel {
+  if (utilizationPct > UTILIZATION_BAND.over) return "high";
+  if (utilizationPct >= UTILIZATION_BAND.near) return "medium";
   return "low";
 }
 
-/** Aggregate one employee's active tasks over [from, to]. */
+/**
+ * Aggregate one employee's active tasks over [from, to]. Capacity subtracts any
+ * public holidays passed in `holidays`. Tasks with a NULL estimated_effort_hours
+ * contribute 0 hours (we never fabricate effort) but are still counted in
+ * active_task_count — the count is the secondary signal that flags estimate gaps.
+ * The level is derived from utilization % (hours ÷ capacity), not the count.
+ */
 export function aggregateEmployeeWorkload(
   tasks: WorkloadTaskInput[],
   from: string,
   to: string,
+  holidays?: Iterable<string>,
 ): WorkloadAggregate {
-  const capacity = capacityHours(from, to);
+  const capacity = capacityHours(from, to, holidays);
   let count = 0;
   let hours = 0;
   for (const t of tasks) {
@@ -113,14 +156,16 @@ export function aggregateEmployeeWorkload(
     count += 1;
     hours += Number(t.estimated_effort_hours ?? 0) || 0;
   }
-  const utilization_pct =
-    capacity > 0 ? Math.round((hours / capacity) * 1000) / 10 : 0;
+  // Band off the RAW percentage (the rounded display value could flip an edge
+  // case across the 80/100 cutoffs); keep the rounded value for display only.
+  const rawUtilization = capacity > 0 ? (hours / capacity) * 100 : 0;
+  const utilization_pct = Math.round(rawUtilization * 10) / 10;
   return {
     active_task_count: count,
     total_estimated_hours: Math.round(hours * 100) / 100,
     capacity_hours: capacity,
     utilization_pct,
-    workload_level: levelFor(count),
+    workload_level: levelForUtilization(rawUtilization),
   };
 }
 

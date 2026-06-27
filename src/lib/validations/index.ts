@@ -9,3 +9,4 @@ export * from "./users";
 export * from "./settings";
 export * from "./saved-views";
 export * from "./comments";
+export * from "./holidays";

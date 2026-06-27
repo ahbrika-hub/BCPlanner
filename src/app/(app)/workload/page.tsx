@@ -1,4 +1,5 @@
-import { getWorkloadForRange } from "@/lib/data/workload";
+import { getWorkloadForRange, getReassignableTasks } from "@/lib/data/workload";
+import { listHolidayDates } from "@/lib/data/holidays";
 import { getCurrentProfile, getCurrentPermissions } from "@/lib/auth/session";
 import { can } from "@/lib/permissions";
 import { todayDateString } from "@/lib/tasks/overdue";
@@ -11,6 +12,7 @@ import { PageHeader } from "@/components/layout/page-header";
 import { EmptyState } from "@/components/ui/empty-state";
 import { WorkloadTable } from "@/components/workload/workload-table";
 import { WorkloadPeriodFilter } from "@/components/workload/workload-period-filter";
+import { ReassignBoard } from "@/components/workload/reassign-board";
 
 const PRESETS = new Set<WorkloadPreset>(["today", "week", "month", "custom"]);
 
@@ -52,9 +54,16 @@ export default async function WorkloadPage({
     str(sp.from),
     str(sp.to),
   );
-  const capacity = capacityHours(range.from, range.to);
+  // Holiday-adjusted capacity for the header label (the per-row utilization is
+  // holiday-adjusted inside getWorkloadForRange via the same central helper).
+  const holidays = await listHolidayDates(range.from, range.to);
+  const capacity = capacityHours(range.from, range.to, holidays);
 
-  const rows = await getWorkloadForRange({ from: range.from, to: range.to });
+  const canAssign = can("tasks.assign", permissions);
+  const [rows, reassignable] = await Promise.all([
+    getWorkloadForRange({ from: range.from, to: range.to }),
+    canAssign ? getReassignableTasks() : Promise.resolve([]),
+  ]);
 
   const rangeLabel =
     range.from === range.to ? range.from : `${range.from} → ${range.to}`;
@@ -83,6 +92,18 @@ export default async function WorkloadPage({
         />
       ) : (
         <WorkloadTable rows={rows} />
+      )}
+
+      {canAssign && reassignable.length > 0 && (
+        <ReassignBoard
+          employees={rows
+            .filter((r) => r.employee_id)
+            .map((r) => ({
+              id: r.employee_id as string,
+              full_name: r.full_name ?? "—",
+            }))}
+          tasks={reassignable}
+        />
       )}
     </>
   );
