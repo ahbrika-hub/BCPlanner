@@ -1,6 +1,8 @@
 import {
   LayoutDashboard,
   ListTodo,
+  LayoutGrid,
+  CalendarRange,
   ClipboardCheck,
   Bell,
   Gauge,
@@ -65,6 +67,22 @@ export const navSections: NavSection[] = [
         // latter surfaces the create-task entry for the CEO (who has tasks.create
         // + tasks.read_all but not tasks.read).
         permission: ["tasks.read", "tasks.create"],
+      },
+      {
+        label: "Board",
+        href: "/board",
+        icon: LayoutGrid,
+        // The board reuses the standard RLS-scoped task list (listTasks), so it
+        // is gated on tasks.read — the same audience as the Tasks list, minus the
+        // CEO's assignee-blind oversight surface (which is not a board).
+        permission: "tasks.read",
+      },
+      {
+        label: "Calendar",
+        href: "/calendar",
+        icon: CalendarRange,
+        // Same RLS-scoped data + gate as the Board.
+        permission: "tasks.read",
       },
       {
         label: "Approvals",
