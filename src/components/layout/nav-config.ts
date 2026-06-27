@@ -112,6 +112,13 @@ export const navSections: NavSection[] = [
         icon: BarChart3,
         permission: "reports.read",
       },
+      {
+        label: "Management Review",
+        href: "/management-review",
+        icon: ClipboardCheck,
+        // reports.read_all = ceo + section_head + admin (employees excluded).
+        permission: "reports.read_all",
+      },
       // The weekly ("Business Lines") dashboard is now reached via the selector
       // on the Dashboard page (/dashboard?view=business-lines), so it no longer
       // needs a separate nav entry here.
@@ -137,6 +144,12 @@ export const navSections: NavSection[] = [
         href: "/admin/templates",
         icon: LayoutTemplate,
         permission: "templates.manage",
+      },
+      {
+        label: "Project Templates",
+        href: "/admin/project-templates",
+        icon: FolderKanban,
+        permission: "projects.manage",
       },
       {
         label: "Holidays",

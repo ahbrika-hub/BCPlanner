@@ -465,6 +465,90 @@ export type Database = {
           },
         ]
       }
+      project_templates: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          is_active: boolean
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      project_template_tasks: {
+        Row: {
+          business_line_id: string | null
+          created_at: string
+          description: string | null
+          estimated_effort_hours: number | null
+          id: string
+          position: number
+          priority: Database["public"]["Enums"]["task_priority"] | null
+          template_id: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          business_line_id?: string | null
+          created_at?: string
+          description?: string | null
+          estimated_effort_hours?: number | null
+          id?: string
+          position?: number
+          priority?: Database["public"]["Enums"]["task_priority"] | null
+          template_id: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          business_line_id?: string | null
+          created_at?: string
+          description?: string | null
+          estimated_effort_hours?: number | null
+          id?: string
+          position?: number
+          priority?: Database["public"]["Enums"]["task_priority"] | null
+          template_id?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_template_tasks_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "project_templates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_template_tasks_business_line_id_fkey"
+            columns: ["business_line_id"]
+            isOneToOne: false
+            referencedRelation: "business_lines"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       public_holidays: {
         Row: {
           created_at: string
