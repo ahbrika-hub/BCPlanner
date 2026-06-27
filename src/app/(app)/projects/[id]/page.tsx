@@ -2,6 +2,8 @@ import { notFound } from "next/navigation";
 
 import { getProject } from "@/lib/data/projects";
 import { getProjectHealth } from "@/lib/data/project-health";
+import { getProjectGanttData } from "@/lib/data/gantt";
+import { todayDateString } from "@/lib/tasks/overdue";
 import { getCurrentProfile, getCurrentPermissions } from "@/lib/auth/session";
 import { can } from "@/lib/permissions";
 import { PageHeader } from "@/components/layout/page-header";
@@ -11,6 +13,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { KpiCard } from "@/components/ui/kpi-card";
 import { DrilldownKpi } from "@/components/dashboard/drilldown-kpi";
+import { ProjectGantt } from "@/components/projects/project-gantt";
 
 // Live, permission-scoped data via cookies — render on demand.
 export const dynamic = "force-dynamic";
@@ -46,9 +49,10 @@ export default async function ProjectDetailPage({
   // Both reads are keyed only on `id` and independent of each other → run
   // concurrently. notFound() after the batch discards the (cheap) health rollup
   // in the rare case the project doesn't exist.
-  const [project, health] = await Promise.all([
+  const [project, health, gantt] = await Promise.all([
     getProject(id),
     getProjectHealth(id),
+    getProjectGanttData(id),
   ]);
   if (!project) notFound();
 
@@ -156,6 +160,23 @@ export default async function ProjectDetailPage({
             description="This project has no tasks to roll up."
           />
         </div>
+      )}
+
+      {/* Read-only timeline: project tasks plotted by start/due, with dependency
+          arrows from task_dependencies. Same gate as this page; no writes. */}
+      {health.total > 0 && (
+        <Card className="mt-6">
+          <CardHeader>
+            <CardTitle>Timeline</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ProjectGantt
+              tasks={gantt.tasks}
+              dependencies={gantt.dependencies}
+              todayStr={todayDateString()}
+            />
+          </CardContent>
+        </Card>
       )}
     </>
   );
