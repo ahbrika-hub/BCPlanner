@@ -42,6 +42,7 @@ export function TaskActionBar({
   lastUpdate,
   currentProgress,
   startBlockedReason,
+  submitBlockedReason,
 }: {
   taskId: string;
   status: TaskStatus;
@@ -56,6 +57,10 @@ export function TaskActionBar({
   // incomplete blockers — the Log Progress action is disabled with this reason.
   // The server (addUpdateAction) enforces this regardless of the affordance.
   startBlockedReason?: string | null;
+  // When set, submitting for review is blocked because the task has open child
+  // subtasks — the Submit-for-Review action is disabled with this reason. The
+  // server (transitionTaskAction) enforces this regardless of the affordance.
+  submitBlockedReason?: string | null;
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -144,16 +149,22 @@ export function TaskActionBar({
       <div className="flex flex-wrap items-center gap-2">
         {actions.map((a) => {
           // Logging progress on a startable task auto-advances it to in_progress;
-          // disable that affordance when the task is blocked (server-enforced too).
-          const blocked =
-            a.action === "log_progress" && Boolean(startBlockedReason);
+          // submit_review enters pending_review. Disable each affordance when its
+          // respective guard is blocking (the server enforces both regardless).
+          const reason =
+            a.action === "log_progress"
+              ? (startBlockedReason ?? null)
+              : a.action === "submit_review"
+                ? (submitBlockedReason ?? null)
+                : null;
+          const blocked = Boolean(reason);
           return (
             <Button
               key={a.action}
               variant={a.variant}
               size="sm"
               disabled={pending || blocked}
-              title={blocked ? (startBlockedReason ?? undefined) : undefined}
+              title={blocked ? (reason ?? undefined) : undefined}
               onClick={() => onClick(a)}
             >
               {a.label}
@@ -163,6 +174,9 @@ export function TaskActionBar({
       </div>
       {startBlockedReason && (
         <p className="text-muted-foreground mt-1 text-xs">{startBlockedReason}</p>
+      )}
+      {submitBlockedReason && (
+        <p className="text-muted-foreground mt-1 text-xs">{submitBlockedReason}</p>
       )}
 
       <Dialog
