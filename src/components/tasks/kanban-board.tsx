@@ -219,6 +219,11 @@ export function KanbanBoard({
   );
 }
 
+/**
+ * A single draggable task card: title (links to the task), task no, status +
+ * priority pills, overdue badge, and a Move menu (the touch/keyboard path). Only
+ * draggable when the viewer has at least one actionable move for its status.
+ */
 function BoardCard({
   task,
   permissions,

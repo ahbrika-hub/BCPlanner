@@ -23,13 +23,19 @@ export function todayDateString(): string {
   return new Date().toISOString().slice(0, 10);
 }
 
-/** True when a task is overdue per the canonical definition above. */
+/**
+ * True when a task is overdue per the canonical definition above. `today`
+ * defaults to {@link todayDateString} but can be injected (`YYYY-MM-DD`) so a
+ * caller that already fixed a reference date — e.g. the calendar grid — derives
+ * overdue against the SAME date it renders, with no clock drift mid-render.
+ */
 export function isOverdue(
   dueDate: string | null | undefined,
   status: TaskStatus,
+  today: string = todayDateString(),
 ): boolean {
   if (!dueDate) return false;
   if (OVERDUE_EXCLUDED_STATUSES.includes(status)) return false;
   // Both are date-only strings (YYYY-MM-DD); lexical compare is chronological.
-  return dueDate < todayDateString();
+  return dueDate < today;
 }

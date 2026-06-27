@@ -14,7 +14,7 @@ through it the DB `validate_task_transition` guard), and the calendar only reads
   touched until the branch existed.
 - Feature branch → PR to `main`. Never pushed to `main`. One coherent change set.
 
-```
+```bash
 $ git checkout -b feat/kanban-calendar     # from main @ 3a5a797
 Switched to a new branch 'feat/kanban-calendar'
 ```
@@ -49,12 +49,14 @@ Switched to a new branch 'feat/kanban-calendar'
 ## 3. Files changed / added
 
 ### Added — logic (framework-agnostic, unit-tested)
+
 | File | Purpose |
 |------|---------|
 | `src/lib/tasks/board.ts` | Lane model + `resolveBoardDrop` / `descriptorForDrop` / `actionableTargets` — resolves a drop to one existing ACTIONS descriptor; never invents a transition. |
 | `src/lib/tasks/calendar.ts` | `buildCalendarMonth` / `splitByDueDate` — pure due-date bucketing + month grid, overdue via the canonical rule. |
 
 ### Added — UI
+
 | File | Purpose |
 |------|---------|
 | `src/components/tasks/kanban-board.tsx` | Client board: native HTML5 DnD + Move menu; optimistic move; illegal/needs-fields/permission handling; calls `transitionTaskAction`. |
@@ -64,12 +66,14 @@ Switched to a new branch 'feat/kanban-calendar'
 | `src/app/(app)/calendar/page.tsx` | Server page: `tasks.read` gate, same filters, read-only. |
 
 ### Added — tests
+
 | File | Purpose |
 |------|---------|
 | `tests/unit/board-transitions.test.ts` | Lane mapping + that every drop resolves to a real ACTIONS descriptor (no direct status write) + legal/illegal/needs-fields/permission verdicts. |
 | `tests/unit/planning-calendar.test.ts` | Due-date bucketing, day placement, overdue, undated separation, whole-weeks grid. |
 
 ### Modified
+
 | File | Change |
 |------|--------|
 | `src/components/layout/nav-config.ts` | Added **Board** + **Calendar** nav items (Work group), gated `tasks.read`. |
@@ -138,12 +142,13 @@ bar — consistent with the same "never bypass a required field" rule.
 - The calendar pages/components import **no** action and **no** mutation — read
   only.
 
-```
+```bash
 $ grep -rn "transitionTaskAction\|updateTask\|\.from(\"tasks\")\|supabase" \
     src/components/tasks/kanban-board.tsx src/components/tasks/planning-calendar.tsx
 src/components/tasks/kanban-board.tsx:10:import { transitionTaskAction } from "@/lib/actions/tasks";
 src/components/tasks/kanban-board.tsx:123:          const res = await transitionTaskAction(task.id, action);
 ```
+
 (One import, one call site, no direct DB/status write. Calendar: no matches.)
 
 ---
@@ -163,7 +168,7 @@ $ npm run test
 > vitest run
  Test Files  44 passed (44)
       Tests  223 passed (223)
-   (44 new board/calendar assertions across 2 new files; 199 pre-existing still green)
+   (24 new board/calendar tests across 2 new files; 199 pre-existing still green = 223)
 
 $ npm run build
 > next build

@@ -31,25 +31,27 @@ function task(
 
 describe("splitByDueDate", () => {
   it("separates tasks with a due_date from those without", () => {
-    const { dated, undated } = splitByDueDate([
-      task("a", "2026-06-15"),
-      task("b", null),
-      task("c", "2026-06-15"),
-    ]);
+    const { dated, undated } = splitByDueDate(
+      [task("a", "2026-06-15"), task("b", null), task("c", "2026-06-15")],
+      TODAY,
+    );
     expect(undated.map((t) => t.id)).toEqual(["b"]);
     expect(dated.get("2026-06-15")?.map((t) => t.id)).toEqual(["a", "c"]);
   });
 
-  it("marks overdue with the canonical rule (terminal statuses excluded)", () => {
-    const { dated } = splitByDueDate([
-      task("past", "2026-06-15", "in_progress"), // before TODAY... but overdue
-      task("done", "2026-06-15", "completed"), // terminal → never overdue
-      task("future", "2026-12-01", "in_progress"),
-    ]);
-    // isOverdue uses the real "today" (system clock); assert relative ordering
-    // only via the explicit terminal-status exclusion which is date-independent.
-    const done = dated.get("2026-06-15")?.find((t) => t.id === "done");
-    expect(done?.overdue).toBe(false);
+  it("marks overdue against the injected reference date (terminal statuses excluded)", () => {
+    const { dated } = splitByDueDate(
+      [
+        task("past", "2026-06-15", "in_progress"), // before TODAY → overdue
+        task("done", "2026-06-15", "completed"), // terminal → never overdue
+        task("future", "2026-12-01", "in_progress"), // after TODAY → not overdue
+      ],
+      TODAY,
+    );
+    const day = dated.get("2026-06-15") ?? [];
+    expect(day.find((t) => t.id === "past")?.overdue).toBe(true);
+    expect(day.find((t) => t.id === "done")?.overdue).toBe(false);
+    expect(dated.get("2026-12-01")?.[0]?.overdue).toBe(false);
   });
 });
 

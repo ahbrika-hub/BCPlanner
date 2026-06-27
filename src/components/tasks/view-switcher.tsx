@@ -30,8 +30,7 @@ export function ViewSwitcher() {
   const qs = next.toString();
 
   return (
-    <div
-      role="tablist"
+    <nav
       aria-label="Task view"
       className="bg-muted inline-flex items-center gap-1 rounded-lg p-1"
     >
@@ -42,8 +41,7 @@ export function ViewSwitcher() {
           <Link
             key={v.href}
             href={qs ? `${v.href}?${qs}` : v.href}
-            role="tab"
-            aria-selected={active}
+            aria-current={active ? "page" : undefined}
             className={cn(
               "flex min-h-9 items-center gap-1.5 rounded-md px-3 text-sm font-medium",
               "transition-colors motion-reduce:transition-none",
@@ -58,6 +56,6 @@ export function ViewSwitcher() {
           </Link>
         );
       })}
-    </div>
+    </nav>
   );
 }

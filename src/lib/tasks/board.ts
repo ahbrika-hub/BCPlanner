@@ -1,6 +1,6 @@
 import { can } from "@/lib/permissions";
 import { ACTIONS, type ActionDescriptor } from "@/lib/tasks/transitions";
-import { TASK_STATUS_LABELS } from "@/lib/tasks/status";
+import { TASK_STATUS_LABELS, TASK_STATUSES } from "@/lib/tasks/status";
 import type { TaskStatus } from "@/lib/data/types";
 
 /**
@@ -90,6 +90,14 @@ const LANE_BY_STATUS: Record<TaskStatus, Lane> = (() => {
   for (const lane of LANES) {
     for (const status of lane.statuses) map[status] = lane;
   }
+  // Drift guard: a future TaskStatus that isn't added to a lane fails loudly
+  // here at module load, instead of laneForStatus() returning undefined and
+  // crashing later at `.key`. (The board unit test asserts this too.)
+  for (const status of TASK_STATUSES) {
+    if (!map[status]) {
+      throw new Error(`board lane model is missing task status: ${status}`);
+    }
+  }
   return map;
 })();
 
@@ -136,6 +144,12 @@ export function descriptorForDrop(
   );
 }
 
+/**
+ * Classify a drop of a card (`fromStatus`) onto `targetLane` for the given
+ * viewer into one {@link BoardDropResolution} the UI acts on. Order: lanes that
+ * accept no drops → own-lane no-op → no guard-legal action (illegal) → missing
+ * permission → needs extra fields → ready to commit. Never writes a status.
+ */
 export function resolveBoardDrop(
   fromStatus: TaskStatus,
   targetLane: Lane,

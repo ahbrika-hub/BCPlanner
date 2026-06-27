@@ -155,6 +155,8 @@ export function PlanningCalendar({
   );
 }
 
+/** A compact task chip on the calendar — links to the task (modal intercept) and
+ * is tinted red when overdue. */
 function CalendarChip({ task }: { task: CalendarTask }) {
   return (
     <Link

@@ -44,7 +44,12 @@ function ymd(year: number, month: number, day: number): string {
   return `${year}-${m}-${d}`;
 }
 
-function toCalendarTask(t: CalendarTask | TaskWithRelations): CalendarTask {
+/** Project a task row to the slim calendar shape, deriving `overdue` against the
+ * injected reference date so it matches the same render's `isToday` marker. */
+function toCalendarTask(
+  t: CalendarTask | TaskWithRelations,
+  todayStr: string,
+): CalendarTask {
   return {
     id: t.id,
     task_no: t.task_no,
@@ -52,23 +57,27 @@ function toCalendarTask(t: CalendarTask | TaskWithRelations): CalendarTask {
     status: t.status,
     priority: t.priority,
     due_date: t.due_date,
-    overdue: isOverdue(t.due_date, t.status),
+    overdue: isOverdue(t.due_date, t.status, todayStr),
   };
 }
 
 /**
  * Partition tasks into those with a plottable due_date and those without.
  * `dated` keys are `YYYY-MM-DD` → tasks due that day (sorted by task_no for a
- * stable render); `undated` preserves input order.
+ * stable render); `undated` preserves input order. `todayStr` (`YYYY-MM-DD`) is
+ * the reference date overdue is derived against.
  */
-export function splitByDueDate(tasks: TaskWithRelations[]): {
+export function splitByDueDate(
+  tasks: TaskWithRelations[],
+  todayStr: string,
+): {
   dated: Map<string, CalendarTask[]>;
   undated: CalendarTask[];
 } {
   const dated = new Map<string, CalendarTask[]>();
   const undated: CalendarTask[] = [];
   for (const raw of tasks) {
-    const t = toCalendarTask(raw);
+    const t = toCalendarTask(raw, todayStr);
     if (!t.due_date) {
       undated.push(t);
       continue;
@@ -99,7 +108,7 @@ export function buildCalendarMonth(
   tasks: TaskWithRelations[],
   todayStr: string,
 ): { calendar: CalendarMonth; undated: CalendarTask[] } {
-  const { dated, undated } = splitByDueDate(tasks);
+  const { dated, undated } = splitByDueDate(tasks, todayStr);
 
   const firstOfMonth = new Date(Date.UTC(year, month, 1));
   const startDow = firstOfMonth.getUTCDay(); // 0 = Sunday
@@ -184,6 +193,7 @@ const MONTH_LABELS = [
   "December",
 ] as const;
 
+/** Human heading for a year/month (0-based), e.g. (2026, 5) → "June 2026". */
 export function monthLabel(year: number, month: number): string {
   return `${MONTH_LABELS[month]} ${year}`;
 }
