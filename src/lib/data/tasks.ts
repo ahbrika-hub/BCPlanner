@@ -101,6 +101,26 @@ export async function listSubtasks(parentId: string): Promise<TaskBrief[]> {
   return (data ?? []) as TaskBrief[];
 }
 
+/**
+ * A parent's OPEN (non-terminal) children — the set that blocks the parent from
+ * entering pending_review. Empty ⇒ not blocked (no children, or all terminal).
+ *
+ * Uses the SECURITY DEFINER `open_subtasks` function so the check sees ALL
+ * children, not just those visible to the caller — a child assigned to someone
+ * else must still block the parent (completeness; same rationale as the cycle
+ * checks). Returns id + task_no only. Terminal = completed/cancelled/rejected.
+ */
+export async function listOpenSubtasks(
+  parentId: string,
+): Promise<{ id: string; task_no: string | null }[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("open_subtasks", {
+    p_parent_id: parentId,
+  });
+  if (error) throw new Error(error.message);
+  return data ?? [];
+}
+
 /** A single slim task reference (e.g. the parent link), or null if not visible. */
 export async function getTaskBrief(id: string): Promise<TaskBrief | null> {
   const supabase = await createClient();

@@ -11,6 +11,7 @@ import {
   updateTask,
   getTask,
   transitionTask,
+  listOpenSubtasks,
 } from "@/lib/data/tasks";
 import { listIncompleteBlockers } from "@/lib/data/dependencies";
 import { isActiveProject } from "@/lib/data/projects";
@@ -198,6 +199,22 @@ export async function transitionTaskAction(
       if (incomplete.length > 0) {
         const labels = incomplete.map((b) => b.task_no ?? "a task").join(", ");
         return fail(`Blocked by ${labels} (not completed).`);
+      }
+    }
+
+    // PARENT-COMPLETION GUARD (application-layer; validate_task_transition
+    // untouched). A parent may not ENTER pending_review while any child subtask
+    // is still OPEN (non-terminal). `submit_review` is the ONLY action targeting
+    // pending_review (the progress-log trigger only reaches in_progress, and
+    // submit_review is not a bulk action), so this one check covers every real
+    // entry path. Terminal children (completed/cancelled/rejected) never block,
+    // which prevents a cancelled/rejected child from deadlocking the parent. A
+    // leaf task (no children) is unaffected.
+    if (desc.to === "pending_review") {
+      const openChildren = await listOpenSubtasks(id);
+      if (openChildren.length > 0) {
+        const labels = openChildren.map((c) => c.task_no ?? "a subtask").join(", ");
+        return fail(`Has open subtasks: ${labels}.`);
       }
     }
 

@@ -1304,6 +1304,13 @@ export type Database = {
         }[]
       }
       request_task_update: { Args: { p_task_id: string }; Returns: Json }
+      open_subtasks: {
+        Args: { p_parent_id: string }
+        Returns: {
+          id: string
+          task_no: string | null
+        }[]
+      }
     }
     Enums: {
       account_status: "pending" | "active" | "inactive"

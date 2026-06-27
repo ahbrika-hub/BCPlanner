@@ -1,13 +1,19 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
-import { getTask, listSubtasks, getTaskBrief } from "@/lib/data/tasks";
+import {
+  getTask,
+  listSubtasks,
+  getTaskBrief,
+  listOpenSubtasks,
+} from "@/lib/data/tasks";
 import { listBlockers, listBlocking } from "@/lib/data/dependencies";
 import { listTasks } from "@/lib/data/tasks";
 import {
   STARTABLE_STATUSES,
   blockedStartMessage,
 } from "@/lib/tasks/dependencies";
+import { openSubtasksMessage } from "@/lib/tasks/parent-guard";
 import { listUpdates } from "@/lib/data/task-updates";
 import { pickLatestUpdate } from "@/lib/tasks/last-update";
 import {
@@ -85,6 +91,7 @@ export async function TaskDetailContent({ id }: { id: string }) {
     subtasks,
     parent,
     visibleTasks,
+    openChildren,
   ] = await Promise.all([
     listUpdates(id),
     listComments(id),
@@ -100,6 +107,7 @@ export async function TaskDetailContent({ id }: { id: string }) {
     listSubtasks(id),
     task.parent_id ? getTaskBrief(task.parent_id) : Promise.resolve(null),
     listTasks(),
+    listOpenSubtasks(id),
   ]);
   if (!profile) notFound();
   const permissions = await getCurrentPermissions();
@@ -123,6 +131,12 @@ export async function TaskDetailContent({ id }: { id: string }) {
   const startBlockedReason = STARTABLE_STATUSES.includes(task.status)
     ? blockedStartMessage(incompleteBlockers.map((b) => b.task))
     : null;
+
+  // Parent-completion guard: submitting for review is blocked while any child
+  // subtask is still open (non-terminal). `openChildren` comes from the
+  // SECURITY DEFINER helper, so the affordance reflects ALL open children (even
+  // ones this viewer can't see). The server enforces regardless.
+  const submitBlockedReason = openSubtasksMessage(openChildren);
 
   // Resolve mentioned user ids across the thread to names for chip rendering.
   const mentionedIds = comments.flatMap((c) => c.mentioned_user_ids ?? []);
@@ -188,6 +202,7 @@ export async function TaskDetailContent({ id }: { id: string }) {
               lastUpdate={pickLatestUpdate(updates)}
               currentProgress={task.progress_percentage}
               startBlockedReason={startBlockedReason}
+              submitBlockedReason={submitBlockedReason}
             />
           </div>
         }
