@@ -41,6 +41,7 @@ export function TaskActionBar({
   users,
   lastUpdate,
   currentProgress,
+  startBlockedReason,
 }: {
   taskId: string;
   status: TaskStatus;
@@ -51,6 +52,10 @@ export function TaskActionBar({
   // panel + progress pre-fill) and the task's current progress as a fallback.
   lastUpdate?: LastUpdate | null;
   currentProgress?: number;
+  // When set, logging progress would START the task (→ in_progress) but it has
+  // incomplete blockers — the Log Progress action is disabled with this reason.
+  // The server (addUpdateAction) enforces this regardless of the affordance.
+  startBlockedReason?: string | null;
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -137,18 +142,28 @@ export function TaskActionBar({
   return (
     <>
       <div className="flex flex-wrap items-center gap-2">
-        {actions.map((a) => (
-          <Button
-            key={a.action}
-            variant={a.variant}
-            size="sm"
-            disabled={pending}
-            onClick={() => onClick(a)}
-          >
-            {a.label}
-          </Button>
-        ))}
+        {actions.map((a) => {
+          // Logging progress on a startable task auto-advances it to in_progress;
+          // disable that affordance when the task is blocked (server-enforced too).
+          const blocked =
+            a.action === "log_progress" && Boolean(startBlockedReason);
+          return (
+            <Button
+              key={a.action}
+              variant={a.variant}
+              size="sm"
+              disabled={pending || blocked}
+              title={blocked ? (startBlockedReason ?? undefined) : undefined}
+              onClick={() => onClick(a)}
+            >
+              {a.label}
+            </Button>
+          );
+        })}
       </div>
+      {startBlockedReason && (
+        <p className="text-muted-foreground mt-1 text-xs">{startBlockedReason}</p>
+      )}
 
       <Dialog
         open={active !== null}

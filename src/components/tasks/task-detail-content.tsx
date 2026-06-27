@@ -1,7 +1,13 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
-import { getTask } from "@/lib/data/tasks";
+import { getTask, listSubtasks, getTaskBrief } from "@/lib/data/tasks";
+import { listBlockers, listBlocking } from "@/lib/data/dependencies";
+import { listTasks } from "@/lib/data/tasks";
+import {
+  STARTABLE_STATUSES,
+  blockedStartMessage,
+} from "@/lib/tasks/dependencies";
 import { listUpdates } from "@/lib/data/task-updates";
 import { pickLatestUpdate } from "@/lib/tasks/last-update";
 import {
@@ -43,6 +49,8 @@ import { TaskTimeline } from "@/components/tasks/task-timeline";
 import { EditTaskDialogLazy } from "@/components/tasks/edit-task-dialog-lazy";
 import { CommentsSection } from "@/components/tasks/comments-section";
 import { AttachmentsSection } from "@/components/tasks/attachments-section";
+import { TaskDependencies } from "@/components/tasks/task-dependencies";
+import { NewTaskDialogLazy } from "@/components/tasks/new-task-dialog-lazy";
 
 function Field({ label, value }: { label: string; value: React.ReactNode }) {
   return (
@@ -72,6 +80,11 @@ export async function TaskDetailContent({ id }: { id: string }) {
     timeline,
     profile,
     mentionableUsers,
+    blockers,
+    blocking,
+    subtasks,
+    parent,
+    visibleTasks,
   ] = await Promise.all([
     listUpdates(id),
     listComments(id),
@@ -82,9 +95,34 @@ export async function TaskDetailContent({ id }: { id: string }) {
     getTaskTimeline(id),
     getCurrentProfile(),
     listMentionableUsers(id),
+    listBlockers(id),
+    listBlocking(id),
+    listSubtasks(id),
+    task.parent_id ? getTaskBrief(task.parent_id) : Promise.resolve(null),
+    listTasks(),
   ]);
   if (!profile) notFound();
   const permissions = await getCurrentPermissions();
+
+  // Candidate blockers: any task the user can see, except this one (the picker
+  // also drops tasks already linked). Mapped to the slim shape the editor needs.
+  const candidateTasks = visibleTasks
+    .filter((t) => t.id !== id)
+    .map((t) => ({
+      id: t.id,
+      task_no: t.task_no,
+      title: t.title,
+      status: t.status,
+    }));
+
+  // Block-START affordance: only relevant while the task is in a startable
+  // status; the server enforces this regardless of the UI.
+  const incompleteBlockers = blockers.filter(
+    (b) => b.task.status !== "completed",
+  );
+  const startBlockedReason = STARTABLE_STATUSES.includes(task.status)
+    ? blockedStartMessage(incompleteBlockers.map((b) => b.task))
+    : null;
 
   // Resolve mentioned user ids across the thread to names for chip rendering.
   const mentionedIds = comments.flatMap((c) => c.mentioned_user_ids ?? []);
@@ -149,6 +187,7 @@ export async function TaskDetailContent({ id }: { id: string }) {
               users={users}
               lastUpdate={pickLatestUpdate(updates)}
               currentProgress={task.progress_percentage}
+              startBlockedReason={startBlockedReason}
             />
           </div>
         }
@@ -240,6 +279,70 @@ export async function TaskDetailContent({ id }: { id: string }) {
               />
             </div>
           )}
+        </CardContent>
+      </Card>
+
+      <Card className="mb-6">
+        <CardContent className="space-y-6 pt-6">
+          {/* Subtasks (structural only — no parent/child lifecycle coupling) */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-semibold">Subtasks</h3>
+              {canEdit && (
+                <NewTaskDialogLazy
+                  businessLines={businessLines}
+                  users={users}
+                  projects={projects}
+                  parentId={task.id}
+                  triggerLabel="Add subtask"
+                />
+              )}
+            </div>
+            {parent && (
+              <p className="text-muted-foreground text-xs">
+                Parent:{" "}
+                <Link
+                  href={`/tasks/${parent.id}`}
+                  className="text-primary font-mono hover:underline"
+                >
+                  {parent.task_no ?? "—"}
+                </Link>{" "}
+                {parent.title}
+              </p>
+            )}
+            {subtasks.length === 0 ? (
+              <p className="text-muted-foreground text-xs">No subtasks.</p>
+            ) : (
+              <ul className="space-y-1.5">
+                {subtasks.map((s) => (
+                  <li
+                    key={s.id}
+                    className="flex items-center gap-2 rounded-md border px-2 py-1.5 text-sm"
+                  >
+                    <Link
+                      href={`/tasks/${s.id}`}
+                      className="font-mono text-xs hover:underline"
+                    >
+                      {s.task_no ?? "—"}
+                    </Link>
+                    <span className="min-w-0 flex-1 truncate">{s.title}</span>
+                    <StatusBadge status={s.status} />
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+
+          {/* Dependencies (block-start; enforced server-side in addUpdateAction) */}
+          <div className="border-t pt-4">
+            <TaskDependencies
+              taskId={task.id}
+              blockers={blockers}
+              blocking={blocking}
+              candidates={candidateTasks}
+              canEdit={canEdit}
+            />
+          </div>
         </CardContent>
       </Card>
 

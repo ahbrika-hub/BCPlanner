@@ -79,6 +79,39 @@ export async function listTasks(
   return (data ?? []) as unknown as TaskWithRelations[];
 }
 
+/** Slim task reference for parent/subtask links (RLS-scoped). */
+export type TaskBrief = {
+  id: string;
+  task_no: string | null;
+  title: string;
+  status: TaskStatus;
+};
+
+const BRIEF_SELECT = "id, task_no, title, status";
+
+/** A task's direct subtasks (children via parent_id), RLS-scoped. */
+export async function listSubtasks(parentId: string): Promise<TaskBrief[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("tasks")
+    .select(BRIEF_SELECT)
+    .eq("parent_id", parentId)
+    .order("created_at", { ascending: true });
+  if (error) throw new Error(error.message);
+  return (data ?? []) as TaskBrief[];
+}
+
+/** A single slim task reference (e.g. the parent link), or null if not visible. */
+export async function getTaskBrief(id: string): Promise<TaskBrief | null> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("tasks")
+    .select(BRIEF_SELECT)
+    .eq("id", id)
+    .maybeSingle();
+  return (data as TaskBrief) ?? null;
+}
+
 export async function getTask(id: string): Promise<TaskWithRelations | null> {
   const supabase = await createClient();
   const { data } = await supabase

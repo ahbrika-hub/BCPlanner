@@ -12,6 +12,7 @@ import {
   getTask,
   transitionTask,
 } from "@/lib/data/tasks";
+import { listIncompleteBlockers } from "@/lib/data/dependencies";
 import { isActiveProject } from "@/lib/data/projects";
 import { getGeneralBusinessLineId } from "@/lib/data/business-lines";
 import { addComment } from "@/lib/data/comments";
@@ -185,6 +186,20 @@ export async function transitionTaskAction(
 
     const task = await getTask(id);
     if (!task) return fail("Task not found.");
+
+    // BLOCK-START defense-in-depth. Today no transition action targets
+    // in_progress (it is entered only via the progress-log path, gated in
+    // addUpdateAction), so this branch is currently unreachable — but if a future
+    // action ever sets to: "in_progress", the start gate is already here and the
+    // DB guard is never reached for a blocked start. validate_task_transition is
+    // untouched either way.
+    if (desc.to === "in_progress") {
+      const incomplete = await listIncompleteBlockers(id);
+      if (incomplete.length > 0) {
+        const labels = incomplete.map((b) => b.task_no ?? "a task").join(", ");
+        return fail(`Blocked by ${labels} (not completed).`);
+      }
+    }
 
     const sideEffects: Tables["tasks"]["Update"] = {};
 
