@@ -944,6 +944,45 @@ export type Database = {
         }
         Relationships: []
       }
+      task_dependencies: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          depends_on_task_id: string
+          id: string
+          task_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          depends_on_task_id: string
+          id?: string
+          task_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          depends_on_task_id?: string
+          id?: string
+          task_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_dependencies_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "task_dependencies_depends_on_task_id_fkey"
+            columns: ["depends_on_task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       task_updates: {
         Row: {
           challenges_blockers: string | null
@@ -1027,6 +1066,7 @@ export type Database = {
           id: string
           latest_action: string | null
           next_action: string | null
+          parent_id: string | null
           priority: Database["public"]["Enums"]["task_priority"]
           progress_percentage: number
           project_id: string | null
@@ -1059,6 +1099,7 @@ export type Database = {
           id?: string
           latest_action?: string | null
           next_action?: string | null
+          parent_id?: string | null
           priority?: Database["public"]["Enums"]["task_priority"]
           progress_percentage?: number
           project_id?: string | null
@@ -1091,6 +1132,7 @@ export type Database = {
           id?: string
           latest_action?: string | null
           next_action?: string | null
+          parent_id?: string | null
           priority?: Database["public"]["Enums"]["task_priority"]
           progress_percentage?: number
           project_id?: string | null
@@ -1106,6 +1148,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "tasks_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "tasks_approved_by_fkey"
             columns: ["approved_by"]

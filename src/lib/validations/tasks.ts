@@ -53,6 +53,9 @@ const taskFields = z.object({
   due_date: z.iso.date().optional(),
   estimated_effort_hours: z.number().positive().optional(),
   sharepoint_url: sharepointUrlSchema,
+  // Optional parent for subtask creation (structural only). DB FK + self-parent
+  // CHECK + parent-cycle trigger enforce integrity; lifecycle is untouched.
+  parent_id: z.uuid().optional(),
 });
 
 // A project must be picked iff the task is categorised as a project.

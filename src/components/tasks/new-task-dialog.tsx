@@ -60,6 +60,8 @@ export function NewTaskDialog({
   open: openProp,
   onOpenChange,
   showTrigger = true,
+  parentId,
+  triggerLabel,
 }: {
   businessLines: BusinessLineRow[];
   users: AssignableUser[];
@@ -70,6 +72,10 @@ export function NewTaskDialog({
   onOpenChange?: (open: boolean) => void;
   /** Render the built-in "New Task" trigger button. Off when launched externally. */
   showTrigger?: boolean;
+  /** When set, the created task is a SUBTASK of this parent (structural link). */
+  parentId?: string;
+  /** Override the trigger button label (e.g. "Add subtask"). */
+  triggerLabel?: string;
 }) {
   const [internalOpen, setInternalOpen] = useState(false);
   const isControlled = openProp !== undefined;
@@ -131,16 +137,20 @@ export function NewTaskDialog({
       const cleaned = Object.fromEntries(
         Object.entries(values).filter(([, v]) => v !== "" && v !== undefined),
       );
-      const res = await createTaskAction(cleaned);
+      // Subtask: attach the parent link (structural only — no lifecycle coupling).
+      const payload = parentId ? { ...cleaned, parent_id: parentId } : cleaned;
+      const res = await createTaskAction(payload);
       if (res.ok) {
-        toast.success("Task created");
+        toast.success(parentId ? "Subtask created" : "Task created");
         reset(CREATE_DEFAULTS);
         setSeeded(CREATE_DEFAULTS);
         setTemplateId("");
         setFormKey((k) => k + 1);
         setOpen(false);
         router.refresh();
-        if (res.id) router.push(`/tasks/${res.id}`);
+        // For a subtask, stay on the parent so its updated child list shows;
+        // for a top-level task, jump to the new task as before.
+        if (!parentId && res.id) router.push(`/tasks/${res.id}`);
       } else {
         toast.error(res.error);
       }
@@ -151,17 +161,19 @@ export function NewTaskDialog({
     <Dialog open={open} onOpenChange={setOpen}>
       {showTrigger && (
         <DialogTrigger asChild>
-          <Button>
+          <Button variant={parentId ? "outline" : "default"} size={parentId ? "sm" : "default"}>
             <Plus className="size-4" />
-            New Task
+            {triggerLabel ?? "New Task"}
           </Button>
         </DialogTrigger>
       )}
       <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>New Task</DialogTitle>
+          <DialogTitle>{parentId ? "New Subtask" : "New Task"}</DialogTitle>
           <DialogDescription>
-            Create a task. Employee-created tasks go to approval first.
+            {parentId
+              ? "Create a subtask linked to this task. Employee-created tasks go to approval first."
+              : "Create a task. Employee-created tasks go to approval first."}
           </DialogDescription>
         </DialogHeader>
         {templates.length > 0 && (

@@ -7,6 +7,9 @@ import { getCurrentProfile, getCurrentPermissions } from "@/lib/auth/session";
 import { can } from "@/lib/permissions";
 import { createClient } from "@/lib/supabase/server";
 import { addUpdate } from "@/lib/data/task-updates";
+import { getTask } from "@/lib/data/tasks";
+import { listIncompleteBlockers } from "@/lib/data/dependencies";
+import { STARTABLE_STATUSES } from "@/lib/tasks/dependencies";
 import { addComment, markAddressed } from "@/lib/data/comments";
 import {
   uploadAttachment,
@@ -42,6 +45,22 @@ export async function addUpdateAction(
     const permissions = await getCurrentPermissions();
     if (!can("task_updates.create", permissions))
       return fail("Not authorized.");
+
+    // BLOCK-START (application-layer; validate_task_transition untouched).
+    // Logging progress on an assigned/approved/pending_update task auto-advances
+    // it to in_progress via the apply_task_update trigger — this is the only app
+    // path into in_progress. Refuse to START a task while any of its blockers is
+    // not completed. Already-started tasks (and statuses the trigger doesn't
+    // advance) are unaffected. The DB guard is never reached for a blocked start.
+    const task = await getTask(taskId);
+    if (!task) return fail("Task not found.");
+    if (STARTABLE_STATUSES.includes(task.status)) {
+      const incomplete = await listIncompleteBlockers(taskId);
+      if (incomplete.length > 0) {
+        const labels = incomplete.map((b) => b.task_no ?? "a task").join(", ");
+        return fail(`Blocked by ${labels} (not completed).`);
+      }
+    }
 
     await addUpdate({
       task_id: taskId,
